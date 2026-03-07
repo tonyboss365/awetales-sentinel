@@ -1,0 +1,5 @@
+{
+  "name": "AweTales Sentinel",
+  "description": "A real-time conversation analytics dashboard for customer service.",
+  "requestFramePermissions": ["microphone"]
+}

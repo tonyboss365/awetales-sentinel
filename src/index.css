@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-mac::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-mac::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-mac::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+  .scrollbar-mac:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .glass-card {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.7) 100%);
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
+  }
+
+  .bg-grid-pattern {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}

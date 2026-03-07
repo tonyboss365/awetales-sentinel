@@ -1,0 +1,33 @@
+AWETALES SENTINEL - REAL-TIME CONVERSATION ANALYTICS
+======================================================
+HACKATHON TEAM: Akshay Kumar, Charan, Bhuvan S
+
+--- OVERVIEW ---
+AweTales Sentinel is an enterprise-grade, real-time conversation analytics module. It processes streaming text output (simulating Automatic Speech Recognition - ASR) to dynamically analyze live customer support interactions as they happen.
+
+--- WHAT WE BUILT ---
+We built a dual-role platform comprising:
+1. Agent Terminus (The Frontend Support Interface): A live chat environment where an Agent interacts with a Customer.
+2. Director Overview (The Supervisor Dashboard): A real-time monitoring station that visually tracks the Intent, Sentiment, Topic, and Escalation Risk of the active Agent call.
+
+--- HOW IT WORKS ---
+1. Streaming ASR Simulation: As text is typed in the Agent dashboard, it is pushed via bi-directional WebSockets to a FastAPI backend.
+2. 0.2s Lightning Debounce: Rather than waiting for a conversation to end, the backend buffers the live keystrokes using a wildly tiny 0.2s (200ms) debounce window.
+3. AI Inference: The aggregated text chunk is immediately sent to an optimized Large Language Model (GPT-4o-mini via Azure AI Inference). 
+4. Live Data Rendering: The model returns a strictly formatted JSON payload containing the analyzed Sentiment, Intent, Topic, and Escalation Risk. This payload is securely broadcasted back down the WebSocket to any connected Supervisor Dashboards in under 500 milliseconds.
+
+--- WHAT WE USED (TECH STACK) ---
+* Backend API: Python, FastAPI 
+* Concurrency & Communication: asyncio, WebSockets
+* Database & Auth: SQLite3 
+* AI Engine: OpenAI `gpt-4o-mini` (Accessed securely via GitHub Models / Azure AI Inference)
+* Frontend: React Core, Vite, React Router DOM
+* Styling & UI: Tailwind CSS, Lucide Icons, Framer Motion (for ambient glassmorphism)
+
+--- HOW ITS DIFFERENT AND WHY ITS THE BEST ---
+We went above and beyond the standard "Chat Analyzer" requirements in the following ways:
+
+1. Military-Grade Prompt Optimization: We reduced the max_tokens on our LLM generation down to 60. Combined with explicit constraint prompting ("Output ONLY valid JSON"), our architecture achieves near-instantaneous latency. Most analytics engines process *after* a call; ours processes *during* a stutter.
+2. Dynamic Conversational Simulator: Instead of hard-coding the "Customer" side of the conversation, we built a dedicated `/agent/reply` AI endpoint. The system actively generates context-driven responses to test the live analytics dynamically. 
+3. Persistent Architecture: It isn't just a UI shell. We built a full SQLite database handling secure Multi-Role Authentication (Login/Register for Agents and Directors) and a History persistence layer that automatically archives transcripts only when a WebSocket safely closes.
+4. Seamless UX: Instead of a generic dashboard, we utilized Framer Motion, ambient blur orbs, and a strict monochrome design system to make the application feel like a multi-million-dollar enterprise software suite.
