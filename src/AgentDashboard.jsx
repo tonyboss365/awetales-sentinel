@@ -30,6 +30,7 @@ export default function AgentDashboard() {
     const [inputMode, setInputMode] = useState('voice');
     const [inputText, setInputText] = useState('');
     const [isListening, setIsListening] = useState(false);
+    const isListeningRef = useRef(false);
     const [interimTranscript, setInterimTranscript] = useState('');
 
     const [wsStatus, setWsStatus] = useState('Disconnected');
@@ -62,6 +63,7 @@ export default function AgentDashboard() {
 
         recognition.onstart = () => {
             setIsListening(true);
+            isListeningRef.current = true;
         };
 
         recognition.onresult = (event) => {
@@ -89,11 +91,12 @@ export default function AgentDashboard() {
                 alert("Microphone access denied. Please enable it in your browser settings to use voice input.");
             }
             setIsListening(false);
+            isListeningRef.current = false;
         };
 
         recognition.onend = () => {
-            // Only restart if we're supposed to be listening and it wasn't an error stop
-            if (isListening) {
+            // Use ref to avoid stale closure
+            if (isListeningRef.current) {
                 try {
                     recognition.start();
                 } catch (e) {
@@ -118,18 +121,24 @@ export default function AgentDashboard() {
             return;
         }
 
-        if (isListening) {
+        if (isListeningRef.current) {
+            isListeningRef.current = false;
             recognitionRef.current.stop();
             setIsListening(false);
             setInterimTranscript('');
         } else {
             try {
+                isListeningRef.current = true;
                 recognitionRef.current.start();
+                // State update handled by onstart
             } catch (e) {
                 console.error("Recognition start failed:", e);
-                // Attempt to stop and restart if already running
+                isListeningRef.current = false;
                 recognitionRef.current.stop();
-                setTimeout(() => recognitionRef.current.start(), 100);
+                setTimeout(() => {
+                    isListeningRef.current = true;
+                    recognitionRef.current.start();
+                }, 100);
             }
         }
     };
