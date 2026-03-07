@@ -62,6 +62,7 @@ export default function AgentDashboard() {
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
+            console.log("Speech recognition started");
             setIsListening(true);
             isListeningRef.current = true;
         };
@@ -89,19 +90,33 @@ export default function AgentDashboard() {
             console.error('Speech recognition error:', event.error);
             if (event.error === 'not-allowed') {
                 alert("Microphone access denied. Please enable it in your browser settings to use voice input.");
+                isListeningRef.current = false;
+                setIsListening(false);
+            } else if (event.error === 'no-speech') {
+                // Often happens in Chrome, we don't necessarily want to stop UI
+                console.log("No speech detected, continuing...");
+            } else {
+                // For other errors, stop the UI state
+                setIsListening(false);
+                isListeningRef.current = false;
             }
-            setIsListening(false);
-            isListeningRef.current = false;
         };
 
         recognition.onend = () => {
-            // Use ref to avoid stale closure
+            console.log("Speech recognition ended");
+            // Use ref to avoid stale closure. 
+            // Chrome needs a small delay to restart effectively after it ends.
             if (isListeningRef.current) {
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Failed to restart recognition:", e);
-                }
+                console.log("Attempting to restart recognition...");
+                setTimeout(() => {
+                    if (isListeningRef.current) {
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.error("Failed to restart recognition:", e);
+                        }
+                    }
+                }, 200);
             }
         };
 
@@ -109,7 +124,9 @@ export default function AgentDashboard() {
 
         return () => {
             if (recognitionRef.current) {
-                recognitionRef.current.onend = null; // Prevent restart on unmount
+                recognitionRef.current.onend = null;
+                recognitionRef.current.onstart = null;
+                recognitionRef.current.onerror = null;
                 recognitionRef.current.stop();
             }
         };
@@ -122,23 +139,25 @@ export default function AgentDashboard() {
         }
 
         if (isListeningRef.current) {
+            console.log("Stopping recognition manually...");
             isListeningRef.current = false;
             recognitionRef.current.stop();
             setIsListening(false);
             setInterimTranscript('');
         } else {
+            console.log("Starting recognition manually...");
             try {
                 isListeningRef.current = true;
                 recognitionRef.current.start();
                 // State update handled by onstart
             } catch (e) {
-                console.error("Recognition start failed:", e);
+                console.error("Recognition start failed, attempting recovery:", e);
                 isListeningRef.current = false;
                 recognitionRef.current.stop();
                 setTimeout(() => {
                     isListeningRef.current = true;
                     recognitionRef.current.start();
-                }, 100);
+                }, 200);
             }
         }
     };
