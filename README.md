@@ -1,4 +1,6 @@
-
+# <p align="center"><img src="src/assets/logo.png" width="180"></p>
+# <h1 align="center">AWETALES SENTINEL</h1>
+<p align="center">Real-Time ASR Analytics & Conversation Intelligence</p>
 
 A real-time conversation analytics module that processes streaming ASR text to analyze live conversations, detect intent, classify topics, identify sentiment, and monitor escalation risk dynamically.
 
