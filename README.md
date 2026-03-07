@@ -1,4 +1,4 @@
-# AWETALES SENTINEL - Real-Time ASR Analytics
+# <img src="src/assets/logo.png" width="48" align="center"> AWETALES SENTINEL - Real-Time ASR Analytics
 
 A real-time conversation analytics module that processes streaming ASR text to analyze live conversations, detect intent, classify topics, identify sentiment, and monitor escalation risk dynamically.
 
