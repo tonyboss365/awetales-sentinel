@@ -2,7 +2,7 @@
 # <h1 align="center">AWETALES SENTINEL</h1>
 <p align="center">Real-Time ASR Analytics & Conversation Intelligence</p>
 
-**Vercel Link : https://awetales-sentinel.vercel.app/login(in vercel)**/n
+**Vercel Link : https://awetales-sentinel.vercel.app/login(in vercel)**\n
 **Backend Link : https://awetales-sentinel.onrender.com(in render)**/n
 **Note : Open this Application for best results in Microosoft Edge (As google doest'nt support microphone for https:// links)**/n
 
