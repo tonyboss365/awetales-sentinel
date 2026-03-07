@@ -138,17 +138,7 @@ export default function Login() {
                     </button>
                 </form>
 
-                <div className="mt-8 pt-6 border-t border-black/5 text-center">
-                    <p className="text-xs text-gray-400 font-medium mb-2">Demo Credentials</p>
-                    <div className="flex justify-between text-[11px] text-gray-500 bg-black/5 p-3 rounded-lg border border-black/5">
-                        <div className="text-left">
-                            <b>Agent</b><br />agent@awetales.com<br />agent123
-                        </div>
-                        <div className="text-right">
-                            <b>Supervisor</b><br />supervisor@awetales.com<br />super123
-                        </div>
-                    </div>
-                </div>
+
             </motion.div>
 
             {/* Ambient background matching App */}
