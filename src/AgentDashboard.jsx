@@ -170,7 +170,7 @@ export default function AgentDashboard() {
 
             <nav className="sticky top-0 z-50 bg-white/60 backdrop-blur-2xl border-b border-black/5 px-8 py-4 flex justify-between items-center shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center gap-3">
-                    <SentinelLogo className="w-10 h-10 text-black" />                    <SentinelLogo className="w-10 h-10 text-black" />
+                    <SentinelLogo className="w-10 h-10 text-black" />
                     <h1 className="text-2xl font-black text-[#555555] tracking-widest uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>Sentinel</h1>
                     <span className="text-[13px] text-gray-400 font-medium ml-2 hidden sm:block">Agent Terminus</span>
                 </div>

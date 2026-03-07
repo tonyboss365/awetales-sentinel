@@ -35,7 +35,7 @@ export default function Details() {
                 </button>
 
                 <div className="mb-12 text-center md:text-left flex flex-col md:flex-row items-center md:items-end gap-6">
-                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />
+                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-[#555555] tracking-widest uppercase mb-2" style={{ fontFamily: 'Impact, sans-serif' }}>
                             Hackathon Task
