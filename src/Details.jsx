@@ -1,4 +1,7 @@
-
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Database, Cpu, Zap, Activity, Users, Bot } from 'lucide-react';
 
 const SentinelLogo = ({ className = "" }) => (
     <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,6 +23,7 @@ const SentinelLogo = ({ className = "" }) => (
         <path d="M 47.5 76 L 45 85 L 55 85 L 52.5 76 Z" fill="currentColor" />
     </svg>
 );
+
 export default function Details() {
     const navigate = useNavigate();
 
@@ -39,73 +43,76 @@ export default function Details() {
                         <h1 className="text-3xl md:text-5xl font-black text-[#555555] tracking-widest uppercase mb-2" style={{ fontFamily: 'Impact, sans-serif' }}>
                             Hackathon Task
                         </h1>
-                        <p className="text-xl md:text-2xl text-black font-bold mb-2">Real-Time Conversation Analytics from Streaming ASR</p>
+                        <p className="text-gray-500 font-medium tracking-wide flex items-center justify-center md:justify-start gap-2">
+                            <Zap size={16} className="text-black" /> Real-Time Analytics Specification
+                        </p>
                     </div>
                 </div>
 
-                <p className="text-md text-gray-600 font-medium max-w-2xl text-center md:text-left mb-12">
-                    A real-time conversation analytics module that processes streaming text output, analyzing live conversations to extract structured insights including intent, topic, sentiment, and escalation risk using Large Language Models.
-                </p>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Team Info */}
-                    <div className="glass-panel p-6 rounded-3xl bg-white/60 shadow-lg border border-black/5 lg:col-span-1">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center shadow-md">
-                                <Users size={20} />
-                            </div>
-                            <h2 className="text-lg font-bold uppercase tracking-widest">Team</h2>
-                        </div>
-                        <ul className="space-y-4">
-                            <li className="bg-white/80 p-3 rounded-xl border border-black/5">
-                                <p className="font-bold text-sm">Akshay Kumar</p>
-                                <p className="text-xs text-gray-500 font-mono mt-1">2420030604<br />2420030604@klh.edu.in</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <div className="p-8 glass-panel rounded-[2rem] bg-white/60 border border-black/5 shadow-xl">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 uppercase tracking-tighter italic">
+                            <Cpu size={20} className="text-black" /> System Requirements
+                        </h2>
+                        <ul className="space-y-4 text-gray-600">
+                            <li className="flex items-start gap-3">
+                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                                <span>Extract 4 analytical components from streaming ASR text.</span>
                             </li>
-                            <li className="bg-white/80 p-3 rounded-xl border border-black/5">
-                                <p className="font-bold text-sm">Charan</p>
-                                <p className="text-xs text-gray-500 font-mono mt-1">2420090029<br />2420090029@klh.edu.in</p>
+                            <li className="flex items-start gap-3">
+                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                                <span>Real-time processing with low latency for live dashboards.</span>
                             </li>
-                            <li className="bg-white/80 p-3 rounded-xl border border-black/5">
-                                <p className="font-bold text-sm">Bhuvan S</p>
-                                <p className="text-xs text-gray-500 font-mono mt-1">2420030135<br />2420030135@klh.edu.in</p>
+                            <li className="flex items-start gap-3">
+                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-black shrink-0" />
+                                <span>Support for multi-role viewing (Agent vs Director).</span>
                             </li>
                         </ul>
                     </div>
 
-                    {/* Features Implementation */}
-                    <div className="glass-panel p-6 rounded-3xl bg-white/60 shadow-lg border border-black/5 lg:col-span-2">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-md">
-                                <Activity size={20} />
-                            </div>
-                            <h2 className="text-lg font-bold uppercase tracking-widest">Implemented Architecture</h2>
+                    <div className="p-8 glass-panel rounded-[2rem] bg-black text-white border border-black/5 shadow-xl">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 uppercase tracking-tighter italic text-white/90">
+                            <Activity size={20} className="text-white" /> Intelligence Extracted
+                        </h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { label: 'Intent', color: 'bg-blue-500' },
+                                { label: 'Topic', color: 'bg-purple-500' },
+                                { label: 'Sentiment', color: 'bg-green-500' },
+                                { label: 'Escalation', color: 'bg-red-500' }
+                            ].map((item) => (
+                                <div key={item.label} className="p-4 bg-white/10 rounded-2xl border border-white/10">
+                                    <div className={`w-2 h-2 rounded-full ${item.color} mb-2`} />
+                                    <span className="text-[12px] font-bold uppercase tracking-widest opacity-60">{item.label}</span>
+                                </div>
+                            ))}
                         </div>
+                    </div>
+                </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="bg-white/80 p-4 rounded-2xl border border-black/5">
-                                <h3 className="text-sm font-bold flex items-center gap-2 mb-2"><Zap size={14} className="text-yellow-500" /> Real-Time Analytics</h3>
-                                <p className="text-xs text-gray-600 leading-relaxed">
-                                    FastAPI WebSocket streams bi-directional text simulating ASR input. A 0.2s debounce buffer aggregates live tokens before running instantaneous LLM inference, updating Supervisor Dashboards globally in under 500ms.
-                                </p>
-                            </div>
-                            <div className="bg-white/80 p-4 rounded-2xl border border-black/5">
-                                <h3 className="text-sm font-bold flex items-center gap-2 mb-2"><Cpu size={14} className="text-blue-500" /> AI Engine</h3>
-                                <p className="text-xs text-gray-600 leading-relaxed">
-                                    Utilizes <span className="font-mono bg-gray-100 px-1 rounded">gpt-4o-mini</span> via GitHub Inference API. Strict military-grade system prompts enforce JSON generation for Intent Detection, Topic Classification, Sentiment Analysis, and dynamic Escalation Risk heuristics.
-                                </p>
-                            </div>
-                            <div className="bg-white/80 p-4 rounded-2xl border border-black/5">
-                                <h3 className="text-sm font-bold flex items-center gap-2 mb-2"><Bot size={14} className="text-purple-500" /> Component: Auto-Responder</h3>
-                                <p className="text-xs text-gray-600 leading-relaxed">
-                                    Instead of static data, a dedicated <span className="font-mono bg-gray-100 px-1 rounded">/agent/reply</span> endpoint acts as the virtual Agent, generating context-aware empathetic responses to the simulated Customer streaming input.
-                                </p>
-                            </div>
-                            <div className="bg-white/80 p-4 rounded-2xl border border-black/5">
-                                <h3 className="text-sm font-bold flex items-center gap-2 mb-2"><Database size={14} className="text-gray-500" /> Persistence & Multi-Role</h3>
-                                <p className="text-xs text-gray-600 leading-relaxed">
-                                    Fully integrated React Router with separate login portals. SQLite handles Auth accounts and archives all session transcripts (`history` table) when the WebSockets safely disconnect.
-                                </p>
-                            </div>
+                <div className="p-8 glass-panel rounded-[2.5rem] bg-white/40 border border-black/5 shadow-2xl overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Database size={120} />
+                    </div>
+                    <h2 className="text-2xl font-black mb-8 uppercase italic tracking-tighter">Implementation Architecture</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                <Users size={12} /> Frontend Layer
+                            </h3>
+                            <p className="text-sm text-gray-600 leading-relaxed font-mono">React + Vite + Tailwind CSS. Real-time WebSocket handlers manage the state of active sessions.</p>
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                <Zap size={12} /> API Layer
+                            </h3>
+                            <p className="text-sm text-gray-600 leading-relaxed font-mono">FastAPI with High-Conurrency WebSocket managers and 0.2s debounce buffering.</p>
+                        </div>
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+                                <Bot size={12} /> AI Engine
+                            </h3>
+                            <p className="text-sm text-gray-600 leading-relaxed font-mono">GPT-4o-Mini via GitHub Models. Structured system prompts for multi-dimensional analytics.</p>
                         </div>
                     </div>
                 </div>
