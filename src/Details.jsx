@@ -17,6 +17,20 @@ export default function Details() {
                     <ArrowLeft size={16} /> Back
                 </button>
 
+                <div className="mb-12 text-center md:text-left flex flex-col md:flex-row items-center md:items-end gap-6">
+                    <img src={logo} alt="Sentinel Logo" className="w-24 h-24 object-contain mb-4 md:mb-0" />
+                    <div>
+                        <h1 className="text-3xl md:text-5xl font-black text-[#555555] tracking-widest uppercase mb-2" style={{ fontFamily: 'Impact, sans-serif' }}>
+                            Hackathon Task
+                        </h1>
+                        <p className="text-xl md:text-2xl text-black font-bold mb-2">Real-Time Conversation Analytics from Streaming ASR</p>
+                    </div>
+                </div>
+
+                <p className="text-md text-gray-600 font-medium max-w-2xl text-center md:text-left mb-12">
+                    A real-time conversation analytics module that processes streaming text output, analyzing live conversations to extract structured insights including intent, topic, sentiment, and escalation risk using Large Language Models.
+                </p>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Team Info */}
                     <div className="glass-panel p-6 rounded-3xl bg-white/60 shadow-lg border border-black/5 lg:col-span-1">
