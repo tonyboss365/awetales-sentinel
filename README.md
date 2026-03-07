@@ -117,11 +117,11 @@ npm run dev
 
 ## 🌐 CLOUD DEPLOYMENT GUIDE
 
-### 1. Frontend: Vercel (Free)
+### 1. Frontend: Vercel (hosting)
 - Connect your GitHub repo to [Vercel](https://vercel.com).
 - It will automatically deploy the React app for you.
 
-### 2. Backend: Render (Free)
+### 2. Backend: Render 
 - Create a **New Web Service** at [Render.com](https://render.com).
 - Connect your GitHub repo.
 - **Build Command**: `pip install -r requirements.txt`
