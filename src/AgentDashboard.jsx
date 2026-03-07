@@ -213,39 +213,58 @@ export default function AgentDashboard() {
                     setMessages(prev => [...prev, newMsg]);
                     setIsAgentTyping(false);
 
-                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                        wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
-                    }
-
-                    // Play agent response using browser's built-in Text-to-Speech
+                    // Fire Speech Synthesis in parallel with state updates
                     if ('speechSynthesis' in window) {
                         isSpeakingRef.current = true;
-                        // Optional: Temporarily suspend recognition while speaking for guaranteed silence
+
+                        // Briefly pause recognition so the mic doesn't catch the AI's own voice
                         if (isListeningRef.current && recognitionRef.current) {
                             try { recognitionRef.current.stop(); } catch (e) { }
                         }
 
                         const utterance = new SpeechSynthesisUtterance(replyText);
 
-                        // Select a humanoid/natural voice over robotic system defaults
+                        // Select the absolute best humanoid TTS available (Microsoft Aria/Zira or Google US)
                         let voices = window.speechSynthesis.getVoices();
-                        const humanoidVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Google')))
-                            || voices.find(v => v.lang.startsWith('en'));
-                        if (humanoidVoice) utterance.voice = humanoidVoice;
+                        const premiumVoices = ['Microsoft Aria Online', 'Microsoft Jenny Online', 'Google US English', 'Microsoft Zira'];
 
-                        utterance.pitch = 1.05;
-                        utterance.rate = 1.05;
+                        let selectedVoice = null;
+                        for (let premium of premiumVoices) {
+                            selectedVoice = voices.find(v => v.name.includes(premium));
+                            if (selectedVoice) break;
+                        }
+
+                        // Fallback to any natural English voice
+                        if (!selectedVoice) {
+                            selectedVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Online')))
+                                || voices.find(v => v.lang.startsWith('en-US'));
+                        }
+
+                        if (selectedVoice) utterance.voice = selectedVoice;
+
+                        // Normalizing pitch/rate makes modern TTS sound significantly more human
+                        utterance.pitch = 1.0;
+                        utterance.rate = 1.0;
 
                         utterance.onend = () => {
                             isSpeakingRef.current = false;
-                            // Resume listening if we were listening before
+                            // Resume listening to the customer seamlessly
                             if (isListeningRef.current && inputMode === 'voice' && recognitionRef.current) {
                                 try { recognitionRef.current.start(); } catch (e) { }
                             }
                         };
-                        utterance.onerror = () => { isSpeakingRef.current = false; };
 
+                        utterance.onerror = (e) => {
+                            console.error("Speech Synthesis Error:", e);
+                            isSpeakingRef.current = false;
+                        };
+
+                        // Speak immediately
                         window.speechSynthesis.speak(utterance);
+                    }
+
+                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                        wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
                     }
                 })
                 .catch(err => {
