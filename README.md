@@ -90,7 +90,7 @@ We built a dual-sided Multi-Role architecture.
 
 ---
 
-## 4. INSTALLATION & USAGE
+## 4. LOCAL INSTALLATION & USAGE
 To run this project locally on your machine:
 
 ### 1. Requirements:
@@ -113,9 +113,17 @@ npm install
 npm run dev
 ```
 
-### 4. Navigating the App:
-- Open `http://localhost:5173` 
-- Choose "Register" from the Login Screen.
-- Register an account as an **Agent** and **Supervisor**.
-- Log into `/agent` and begin typing a mock customer complaint.
-- In a separate browser window, log into `/supervisor` to view the analytics generating in real-time.
+---
+
+## 🌐 CLOUD DEPLOYMENT GUIDE
+
+### 1. Frontend: Vercel (Free)
+- Connect your GitHub repo to [Vercel](https://vercel.com).
+- It will automatically deploy the React app for you.
+
+### 2. Backend: Render (Free)
+- Create a **New Web Service** at [Render.com](https://render.com).
+- Connect your GitHub repo.
+- **Build Command**: `pip install -r requirements.txt`
+- **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- **Env Variables**: Add `OPENAI_API_KEY`.
