@@ -24,8 +24,6 @@ const getSentimentIcon = (sentiment) => {
     }
 };
 
-
-
 export default function SupervisorDashboard() {
     const navigate = useNavigate();
     const [wsStatus, setWsStatus] = useState('Disconnected');
@@ -41,10 +39,6 @@ export default function SupervisorDashboard() {
     const userString = localStorage.getItem('user');
     const user = userString ? JSON.parse(userString) : { email: 'supervisor@demo.com' };
 
-    if (user.role !== 'supervisor' && !userString) {
-        // just default for now
-    }
-
     useEffect(() => {
         let reconnectTimeout;
         const connectWs = () => {
@@ -55,7 +49,6 @@ export default function SupervisorDashboard() {
                     const data = JSON.parse(event.data);
                     if (data.type === 'full_state') {
                         setAgents(data.agents);
-                        // If no agent selected and agents available, select first
                         if (!selectedAgentId && Object.keys(data.agents).length > 0) {
                             setSelectedAgentId(Object.keys(data.agents)[0]);
                         }
@@ -84,16 +77,19 @@ export default function SupervisorDashboard() {
                 .then(r => r.json())
                 .then(data => setDbUsers(data))
                 .catch(err => console.error("Failed to fetch users", err));
-
-        }, [activeTab]);
+        } else if (activeTab === 'history') {
+            fetch('https://awetales-sentinel.onrender.com/history')
+                .then(r => r.json())
+                .then(data => setHistory(data))
+                .catch(err => console.error("Failed to fetch history", err));
+        }
+    }, [activeTab]);
 
     const activeAgentList = Object.values(agents);
     const selectedAgent = selectedAgentId ? agents[selectedAgentId] : null;
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] bg-grid-pattern font-sans antialiased flex flex-col tracking-tight text-gray-900 relative">
-
-            {/* Top Navbar */}
             <nav className="sticky top-0 z-50 bg-white/60 backdrop-blur-2xl border-b border-black/5 px-8 py-4 flex justify-between items-center shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center gap-4">
                     <img src={logo} alt="Sentinel Logo" className="w-12 h-12 object-contain" />
@@ -118,8 +114,6 @@ export default function SupervisorDashboard() {
             </nav>
 
             <main className="flex-1 flex flex-col lg:flex-row overflow-hidden p-4 md:p-8 gap-4 md:gap-8 max-w-[1600px] mx-auto w-full relative z-10">
-
-                {/* LEFT PANEL: Sidebar Controls */}
                 <aside className="w-full lg:w-80 flex flex-col glass-panel rounded-[2rem] overflow-hidden bg-white/40 shadow-xl border border-black/5 shrink-0">
                     <div className="px-6 py-5 border-b border-black/5 bg-white/60 backdrop-blur-md">
                         <h2 className="font-semibold text-black text-[15px] flex items-center gap-2 mb-4"><Users size={16} /> Directory</h2>
@@ -188,7 +182,6 @@ export default function SupervisorDashboard() {
                                 ) : (
                                     history.map((h, idx) => (
                                         <div key={idx} className="p-4 bg-white border border-black/10 hover:border-black/30 transition-colors rounded-xl shadow-sm cursor-pointer" onClick={() => {
-                                            // Mock selecting a history item by creating a pseudo-agent structure
                                             const histAgent = {
                                                 agent_id: `${h.agent_id} (Archived)`,
                                                 transcript: h.transcript,
@@ -220,7 +213,6 @@ export default function SupervisorDashboard() {
                     </div>
                 </aside>
 
-                {/* RIGHT PANEL: Analytics & Transcript for Selected Agent */}
                 <section className={`flex-1 flex flex-col glass-panel rounded-[2rem] overflow-hidden transition-all duration-500 bg-white/40 border border-black/5 shadow-2xl ${selectedAgent && selectedAgent.analytics.escalation_risk === 'high' ? 'ring-2 ring-red-500/50 shadow-[0_8px_30px_rgba(239,68,68,0.15)]' : ''
                     }`}>
                     {selectedAgent ? (
@@ -238,7 +230,6 @@ export default function SupervisorDashboard() {
                             </div>
 
                             <div className="flex-1 flex p-6 gap-6 overflow-hidden">
-                                {/* Transcript Column */}
                                 <div className="flex-1 flex flex-col bg-white/50 rounded-2xl border border-black/5 overflow-hidden shadow-sm">
                                     <div className="p-4 border-b border-black/5 bg-gray-50">
                                         <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Live Transcript</span>
@@ -248,7 +239,6 @@ export default function SupervisorDashboard() {
                                     </div>
                                 </div>
 
-                                {/* Analytics Column */}
                                 <div className="flex-1 overflow-y-auto pr-2 pb-20">
                                     <AnimatePresence>
                                         {selectedAgent.analytics.escalation_risk === 'high' && (
