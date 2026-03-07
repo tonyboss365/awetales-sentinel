@@ -84,7 +84,13 @@ We built a dual-sided Multi-Role architecture.
 
 ### BACKEND 
 - **Framework**: Python + FastAPI + Uvicorn 
-- **Database**: SQLite3 for `users` and session `history` persistence
+- **Database**: **SQLite3** for high-efficiency, zero-config persistence.
+  - **Tables**:
+    - `users`: Stores credentials and roles (Agent/Supervisor).
+    - `history`: Archives conversation transcripts and real-time AI analytics.
+  - **Auto-Seeding**: Automatically pre-loads demo credentials upon initialization:
+    - Agent: `agent@awetales.com` / `agent123`
+    - Supervisor: `supervisor@awetales.com` / `super123`
 - **Responsibilities**: Manages the `ConnectionManager` routing standard WebSocket connections alongside broadcasting data to pure listener clients (Supervisors). Exposes standard REST points for Auth and AI Reply generation.
 
 ### AI ENGINE
