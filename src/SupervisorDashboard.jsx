@@ -48,7 +48,7 @@ export default function SupervisorDashboard() {
     useEffect(() => {
         let reconnectTimeout;
         const connectWs = () => {
-            wsRef.current = new WebSocket('ws://localhost:8000/ws/supervisor');
+            wsRef.current = new WebSocket('wss://awetales-sentinel.onrender.com/ws/supervisor');
             wsRef.current.onopen = () => setWsStatus('Connected');
             wsRef.current.onmessage = (event) => {
                 try {
@@ -80,15 +80,12 @@ export default function SupervisorDashboard() {
 
     useEffect(() => {
         if (activeTab === 'accounts') {
-            fetch('http://localhost:8000/users')
+            fetch('https://awetales-sentinel.onrender.com/users')
                 .then(r => r.json())
                 .then(data => setDbUsers(data))
                 .catch(err => console.error("Failed to fetch users", err));
         } else if (activeTab === 'history') {
-            fetch('http://localhost:8000/history')
-                .then(r => r.json())
-                .then(data => setHistory(data))
-                .catch(err => console.error("Failed to fetch history", err));
+
         }
     }, [activeTab]);
 

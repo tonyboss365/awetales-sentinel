@@ -20,7 +20,7 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const endpoint = isRegister ? 'http://localhost:8000/auth/register' : 'http://localhost:8000/auth/login';
+            const endpoint = isRegister ? 'https://awetales-sentinel.onrender.com/auth/register' : 'https://awetales-sentinel.onrender.com/auth/login';
             const bodyData = isRegister ? { email, password, role } : { email, password };
 
             const res = await fetch(endpoint, {

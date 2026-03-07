@@ -33,7 +33,7 @@ export default function AgentDashboard() {
 
     const fetchHistory = async () => {
         try {
-            const res = await fetch("http://localhost:8000/history");
+            const res = await fetch("https://awetales-sentinel.onrender.com/history");
             const data = await res.json();
             setHistoryData(data.filter(h => h.agent_id === user?.id));
             setShowHistory(true);
@@ -56,7 +56,7 @@ export default function AgentDashboard() {
     useEffect(() => {
         let reconnectTimeout;
         const connectWs = () => {
-            wsRef.current = new WebSocket(`ws://localhost:8000/ws/agent/${user.id}`);
+            wsRef.current = new WebSocket(`wss://awetales-sentinel.onrender.com/ws/agent/${user.id}`);
             wsRef.current.onopen = () => setWsStatus('Connected');
             wsRef.current.onmessage = (event) => {
                 // Agent dashboard just ignores analytics payload
@@ -92,7 +92,7 @@ export default function AgentDashboard() {
             // Generate full transcript for context
             const transcript = messages.map(m => `${m.role}: ${m.text}`).join('\n');
 
-            fetch('http://localhost:8000/agent/reply', {
+            fetch('https://awetales-sentinel.onrender.com/agent/reply', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ transcript })
