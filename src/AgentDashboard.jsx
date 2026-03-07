@@ -27,13 +27,13 @@ const SentinelLogo = ({ className = "" }) => (
 export default function AgentDashboard() {
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
-    const [inputMode, setInputMode] = useState('type'); // changed default to type
+    const [inputMode, setInputMode] = useState('voice'); // Voice is the "premium" default
     const [inputText, setInputText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [interimTranscript, setInterimTranscript] = useState('');
 
     const [wsStatus, setWsStatus] = useState('Disconnected');
-    const sendAsRole = 'Customer'; // Hardcoded to always simulate customer
+    const sendAsRole = 'Customer';
 
     const wsRef = useRef(null);
     const recognitionRef = useRef(null);
@@ -44,13 +44,61 @@ export default function AgentDashboard() {
     const { scrollY } = useScroll();
     const leftOrbY = useTransform(scrollY, [0, 500], [0, 100]);
 
-    // Read user from localStorage
     const userString = localStorage.getItem('user');
-    if (!userString && !window.location.href.includes('login')) {
-        // Simple safety check
-    }
     const user = userString ? JSON.parse(userString) : { email: 'agent@demo.com', id: '1' };
 
+    // --- SPEECH RECOGNITION SETUP ---
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
+
+            recognitionRef.current.onresult = (event) => {
+                let final = '';
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        final += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+                if (final) {
+                    handleMessageSubmit(final);
+                    setInterimTranscript('');
+                } else {
+                    setInterimTranscript(interim);
+                }
+            };
+
+            recognitionRef.current.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                setIsListening(false);
+            };
+
+            recognitionRef.current.onend = () => {
+                if (isListening) recognitionRef.current.start();
+            };
+        }
+        return () => {
+            if (recognitionRef.current) recognitionRef.current.stop();
+        };
+    }, [isListening]);
+
+    const toggleListening = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+            setInterimTranscript('');
+        } else {
+            recognitionRef.current?.start();
+            setIsListening(true);
+        }
+    };
+
+    // --- WEBSOCKET SETUP ---
     useEffect(() => {
         let reconnectTimeout;
         const connectWs = () => {
@@ -81,11 +129,8 @@ export default function AgentDashboard() {
         if (messages.length === 0) return;
         const lastMsg = messages[messages.length - 1];
 
-        // If the last message was from the customer
         if (lastMsg.role === 'Customer') {
             setIsAgentTyping(true);
-
-            // Generate full transcript for context
             const transcript = messages.map(m => `${m.role}: ${m.text}`).join('\n');
 
             fetch('https://awetales-sentinel.onrender.com/agent/reply', {
@@ -110,7 +155,7 @@ export default function AgentDashboard() {
                     const errorMsg = {
                         id: Date.now(),
                         role: 'Agent',
-                        text: "⚠️ [Technical Difficulty] I cannot generate a response right now. Please ensure your backend has the correct OPENAI_API_KEY configured on Render."
+                        text: "⚠️ [Technical Difficulty] I cannot generate a response right now. Please check your Render environment variables."
                     };
                     setMessages(prev => [...prev, errorMsg]);
                 });
@@ -188,9 +233,23 @@ export default function AgentDashboard() {
                 >
                     <div className="px-8 py-5 border-b border-black/5 bg-white/60 backdrop-blur-md flex justify-between items-center z-10 shrink-0">
                         <h2 className="font-semibold text-black text-[15px]">Active Call Session</h2>
+                        <div className="flex bg-black/5 p-1 rounded-xl border border-black/5">
+                            <button
+                                onClick={() => { setInputMode('voice'); setInputText(''); }}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'voice' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                <Mic size={14} /> Voice
+                            </button>
+                            <button
+                                onClick={() => { setInputMode('type'); setIsListening(false); recognitionRef.current?.stop(); }}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'type' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                <Keyboard size={14} /> Type
+                            </button>
+                        </div>
                     </div>
 
-                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth z-0">
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth z-0 bg-white/20">
                         <AnimatePresence mode="popLayout">
                             {messages.length === 0 && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50 space-y-4">
@@ -214,7 +273,7 @@ export default function AgentDashboard() {
                                 </motion.div>
                             ))}
                             {isAgentTyping && (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3">
+                                <motion.div key="typing-indicator" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-black/5 shadow-sm">
                                         <Bot size={14} className="text-gray-400" />
                                     </div>
@@ -227,31 +286,74 @@ export default function AgentDashboard() {
                                     </div>
                                 </motion.div>
                             )}
+                            {interimTranscript && (
+                                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end pr-11">
+                                    <div className="bg-black/5 text-gray-500 italic text-[13px] px-4 py-2 rounded-2xl rounded-br-none">
+                                        {interimTranscript}...
+                                    </div>
+                                </motion.div>
+                            )}
                             <div ref={messagesEndRef} />
                         </AnimatePresence>
                     </div>
 
                     <div className="p-8 border-t border-black/5 bg-white/60 backdrop-blur-md z-10 shrink-0">
-                        <form onSubmit={handleSendText} className="relative group flex items-center gap-3">
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    value={inputText}
-                                    onChange={(e) => setInputText(e.target.value)}
-                                    placeholder="Type message as Customer..."
-                                    className="w-full bg-white/80 border border-black/10 rounded-2xl px-6 py-4 text-[15px] focus:outline-none focus:ring-4 focus:ring-black/5 transition-all shadow-sm placeholder:text-gray-400 pr-16"
-                                />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    <button
-                                        type="submit"
-                                        disabled={!inputText.trim()}
-                                        className={`p-2.5 rounded-xl transition-all ${inputText.trim() ? 'bg-black text-white shadow-lg hover:scale-105 active:scale-95' : 'bg-gray-100 text-gray-300'}`}
-                                    >
-                                        <Send size={18} />
-                                    </button>
-                                </div>
+                        {inputMode === 'voice' ? (
+                            <div className="flex flex-col items-center justify-center py-4 gap-6">
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={toggleListening}
+                                    className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 ${isListening ? 'bg-red-500 text-white shadow-[0_0_30px_rgba(239,68,68,0.4)]' : 'bg-black text-white shadow-xl'}`}
+                                >
+                                    {isListening ? (
+                                        <>
+                                            <div className="flex gap-1 items-center justify-center">
+                                                {[0, 1, 2, 3].map(i => (
+                                                    <motion.div
+                                                        key={i}
+                                                        animate={{ height: [10, 30, 10] }}
+                                                        transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
+                                                        className="w-1 bg-white rounded-full"
+                                                    />
+                                                ))}
+                                            </div>
+                                            <motion.div
+                                                animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
+                                                transition={{ duration: 1.5, repeat: Infinity }}
+                                                className="absolute inset-0 rounded-full bg-red-500 -z-10"
+                                            />
+                                        </>
+                                    ) : (
+                                        <Mic size={32} />
+                                    )}
+                                </motion.button>
+                                <span className={`text-[11px] font-bold uppercase tracking-widest ${isListening ? 'text-red-500 animate-pulse' : 'text-gray-400'}`}>
+                                    {isListening ? 'Listening ASR Input...' : 'Click to start voice interface'}
+                                </span>
                             </div>
-                        </form>
+                        ) : (
+                            <form onSubmit={handleSendText} className="relative group flex items-center gap-3">
+                                <div className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        value={inputText}
+                                        onChange={(e) => setInputText(e.target.value)}
+                                        placeholder="Type message as Customer..."
+                                        className="w-full bg-white/80 border border-black/10 rounded-2xl px-6 py-4 text-[15px] focus:outline-none focus:ring-4 focus:ring-black/5 transition-all shadow-sm placeholder:text-gray-400 pr-16"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        <button
+                                            type="submit"
+                                            disabled={!inputText.trim()}
+                                            className={`p-2.5 rounded-xl transition-all ${inputText.trim() ? 'bg-black text-white shadow-lg hover:scale-105 active:scale-95' : 'bg-gray-100 text-gray-300'}`}
+                                        >
+                                            <Send size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
                         <p className="text-[10px] text-center mt-4 text-gray-400 uppercase tracking-widest font-bold">Press enter to stream to sentinel engine</p>
                     </div>
                 </motion.div>
