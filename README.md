@@ -2,9 +2,9 @@
 # <h1 align="center">AWETALES SENTINEL</h1>
 <p align="center">Real-Time ASR Analytics & Conversation Intelligence</p>
 
-**Vercel Link : https://awetales-sentinel.vercel.app/login**(in vercel)
-**Backend Link : https://awetales-sentinel.onrender.com**(in render)
-**Note : Open this Application for best results in Microosoft Edge (As google doest'nt support microphone for https:// links)**
+**Vercel Link : https://awetales-sentinel.vercel.app/login(in vercel)**/n
+**Backend Link : https://awetales-sentinel.onrender.com(in render)**/n
+**Note : Open this Application for best results in Microosoft Edge (As google doest'nt support microphone for https:// links)**/n
 
 A real-time conversation analytics module that processes streaming ASR text to analyze live conversations, detect intent, classify topics, identify sentiment, and monitor escalation risk dynamically.
 
