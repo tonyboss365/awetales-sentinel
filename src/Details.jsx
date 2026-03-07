@@ -1,5 +1,4 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Database, Cpu, Zap, Activity, Users, Bot } from 'lucide-react';
+
 
 const SentinelLogo = ({ className = "" }) => (
     <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
