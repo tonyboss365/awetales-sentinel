@@ -84,10 +84,8 @@ export default function SupervisorDashboard() {
                 .then(r => r.json())
                 .then(data => setDbUsers(data))
                 .catch(err => console.error("Failed to fetch users", err));
-        } else if (activeTab === 'history') {
 
-        }
-    }, [activeTab]);
+        }, [activeTab]);
 
     const activeAgentList = Object.values(agents);
     const selectedAgent = selectedAgentId ? agents[selectedAgentId] : null;
