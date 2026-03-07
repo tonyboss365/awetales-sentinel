@@ -1,12 +1,40 @@
 # AWETALES SENTINEL - Real-Time ASR Analytics
 
-![Sentinel Logo](src/assets/logo.png) <!-- Note: Replace with actual logo path if available -->
+A real-time conversation analytics module that processes streaming ASR text to analyze live conversations, detect intent, classify topics, identify sentiment, and monitor escalation risk dynamically.
 
-## HACKATHON TASK:
-**"Real-Time Conversation Analytics from Streaming ASR"**
-The objective is to build a real-time module that processes streaming ASR text to analyze live conversations, detect intent, classify topics, identify sentiment, and monitor escalation risk dynamically.
+## 📊 System Flow Diagram
+The following diagram illustrates the real-time data flow between the Agent, Backend, AI Engine, and Supervisor.
 
-## TEAM INFO
+```mermaid
+sequenceDiagram
+    participant A as Agent Dashboard (React)
+    participant B as FastAPI Backend (WebSocket)
+    participant AI as AI Engine (gpt-4o-mini)
+    participant S as Supervisor Dashboard (React)
+    participant DB as SQLite Database
+
+    Note over A,B: User starts session
+    A->>B: WebSocket Connect (/ws/agent/{id})
+    B->>S: Broadcast: Agent Online
+
+    loop Real-Time Interaction
+        A->>B: Stream ASR Text (Live Keystrokes)
+        Note right of B: 0.2s Debounce Buffer
+        B->>AI: Analyze Conversation (Intent, Sentiment, Risk)
+        AI-->>B: JSON Analytics Payload
+        B->>S: Broadcast: Live Analytics Update
+        S->>S: Render Sentiment & Risk Alerts
+    end
+
+    Note over A,B: Session Disconnect
+    A-->>B: WebSocket Close
+    B->>DB: Archive Transcript & Stats (History Table)
+    B->>S: Broadcast: Agent Offline
+```
+
+---
+
+## 👥 TEAM INFO
 - **Akshay Kumar** (2420030604) [2420030604@klh.edu.in]
 - **Charan** (2420090029) [2420090029@klh.edu.in]
 - **Bhuvan S** (2420030135) [2420030135@klh.edu.in]
@@ -37,8 +65,8 @@ Language models are slow; streaming real-time analytics requires extreme speed. 
 We built a dual-sided Multi-Role architecture. 
 - The `Agent Dashboard` acts purely as the customer-service agent, feeding the ASR stream. 
 - Handled via pure WebSocket Pub/Sub structure, **entirely separate** `Supervisor Dashboards` receive live payload changes from active agents on the floor, perfectly mimicking reality.
-- We even included an `AI Auto-Responder` that simulates the dynamic, unpredictable replies of a customer instead of relying on a hard-coded text script.
-- All sessions are persistently archived to an SQLite `history` database when the WebSocket safely closes.
+- We even included an **AI Auto-Responder** that simulates the dynamic, unpredictable replies of a customer instead of relying on a hard-coded text script.
+- All sessions are persistently archived to an SQLite **history** database when the WebSocket safely closes.
 
 ---
 
