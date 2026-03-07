@@ -111,6 +111,12 @@ export default function AgentDashboard() {
                 .catch(err => {
                     console.error("AI Reply failed:", err);
                     setIsAgentTyping(false);
+                    const errorMsg = {
+                        id: Date.now(),
+                        role: 'Agent',
+                        text: "⚠️ [Technical Difficulty] I cannot generate a response right now. Please ensure your backend has the correct OPENAI_API_KEY configured on Render."
+                    };
+                    setMessages(prev => [...prev, errorMsg]);
                 });
         }
     }, [messages]);
@@ -147,8 +153,8 @@ export default function AgentDashboard() {
             </div>
 
             <nav className="sticky top-0 z-50 bg-white/60 backdrop-blur-2xl border-b border-black/5 px-8 py-4 flex justify-between items-center shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
-                <div className="flex items-center gap-4">
-                    <img src={logo} alt="Sentinel Logo" className="w-12 h-12 object-contain" />
+                <div className="flex items-center gap-3">
+                    <img src={logo} alt="Sentinel Logo" className="w-10 h-10 object-contain" />
                     <h1 className="text-2xl font-black text-[#555555] tracking-widest uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>Sentinel</h1>
                     <span className="text-[13px] text-gray-400 font-medium ml-2 hidden sm:block">Agent Terminus</span>
                 </div>

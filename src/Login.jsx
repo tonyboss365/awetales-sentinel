@@ -55,8 +55,8 @@ export default function Login() {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md p-8 glass-panel rounded-[2rem] shadow-2xl bg-white/60 backdrop-blur-xl border border-black/5 z-10"
             >
-                <div className="flex flex-col items-center mb-10">
-                    <img src={logo} alt="Sentinel Logo" className="w-28 h-28 mb-6 object-contain drop-shadow-2xl" />
+                <div className="flex flex-col items-center mb-8">
+                    <img src={logo} alt="Sentinel Logo" className="w-20 h-20 mb-4 object-contain" />
                     <h1 className="text-3xl font-black text-[#555555] tracking-widest uppercase text-center" style={{ fontFamily: 'Impact, sans-serif' }}>Sentinel</h1>
                     <p className="text-gray-500 mt-2 text-sm font-medium">Enterprise Communications Intelligence</p>
                 </div>

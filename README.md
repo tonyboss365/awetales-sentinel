@@ -1,4 +1,4 @@
-# <p align="center"><img src="src/assets/logo.png" width="180"></p>
+# <p align="center"><img src="src/assets/logo_shield.png" width="180"></p>
 # <h1 align="center">AWETALES SENTINEL</h1>
 <p align="center">Real-Time ASR Analytics & Conversation Intelligence</p>
 
