@@ -251,8 +251,51 @@ export default function AgentDashboard() {
                         utterance.pitch = 1.0;
                         utterance.rate = 1.05;
 
+                        let typeInterval = null;
+
+                        utterance.onstart = () => {
+                            // Start filling text only when voice actually begins computing and playing (removes delay sync issues)
+                            const typingSpeed = (speechText.length * 60) / Math.max(replyText.length, 1);
+                            typeInterval = setInterval(() => {
+                                setMessages(prev => 
+                                    prev.map(msg => {
+                                        if (msg.id === newMsgId && msg.text.length < replyText.length) {
+                                            return { ...msg, text: replyText.substring(0, msg.text.length + 1) };
+                                        }
+                                        return msg;
+                                    })
+                                );
+                            }, typingSpeed);
+                        };
+
+                        utterance.onboundary = (event) => {
+                            if (event.name === 'word') {
+                                // Ensure text keeps up with speech accurately by syncing word boundaries
+                                const progress = Math.min(event.charIndex / speechText.length, 1);
+                                const targetLength = Math.floor(progress * replyText.length) + 8; // Small lookahead
+                                
+                                setMessages(prev => 
+                                    prev.map(msg => {
+                                        if (msg.id === newMsgId) {
+                                            const newLen = Math.max(msg.text.length, targetLength);
+                                            return { ...msg, text: replyText.substring(0, Math.min(newLen, replyText.length)) };
+                                        }
+                                        return msg;
+                                    })
+                                );
+                            }
+                        };
+
                         utterance.onend = () => {
                             isSpeakingRef.current = false;
+                            if (typeInterval) clearInterval(typeInterval);
+                            
+                            // Ensure text is fully complete
+                            setMessages(prev => prev.map(msg => msg.id === newMsgId ? { ...msg, text: replyText } : msg));
+                            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                                wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
+                            }
+
                             // Resume listening to the customer seamlessly
                             if (isListeningRef.current && inputMode === 'voice' && recognitionRef.current) {
                                 try { recognitionRef.current.start(); } catch (e) { }
@@ -262,33 +305,30 @@ export default function AgentDashboard() {
                         utterance.onerror = (e) => {
                             console.error("Speech Synthesis Error:", e);
                             isSpeakingRef.current = false;
+                            if (typeInterval) clearInterval(typeInterval);
+                            setMessages(prev => prev.map(msg => msg.id === newMsgId ? { ...msg, text: replyText } : msg));
                         };
 
                         // Speak immediately
                         window.speechSynthesis.speak(utterance);
-                    }
-
-                    // Simulated streaming typing effect so text appears parallel to speech
-                    let i = 0;
-                    const estimatedDuration = speechText.length * 75; // Roughly estimate speech duration
-                    const typingSpeed = Math.min(estimatedDuration / replyText.length, 50); // Calculate realistic typing speed to match speech
-
-                    const typeInterval = setInterval(() => {
-                        setMessages(prev => 
-                            prev.map(msg => 
-                                msg.id === newMsgId 
-                                    ? { ...msg, text: replyText.substring(0, i + 1) } 
-                                    : msg
-                            )
-                        );
-                        i++;
-                        if (i >= replyText.length) {
-                            clearInterval(typeInterval);
-                            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                                wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
+                    } else {
+                        // Fallback if no speech synthesis supported
+                        let i = 0;
+                        const typeInterval = setInterval(() => {
+                            setMessages(prev => 
+                                prev.map(msg => 
+                                    msg.id === newMsgId ? { ...msg, text: replyText.substring(0, i + 1) } : msg
+                                )
+                            );
+                            i++;
+                            if (i >= replyText.length) {
+                                clearInterval(typeInterval);
+                                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                                    wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
+                                }
                             }
-                        }
-                    }, typingSpeed);
+                        }, 50);
+                    }
                 })
                 .catch(err => {
                     console.error("AI Reply failed:", err);
