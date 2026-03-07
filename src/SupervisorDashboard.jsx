@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, MessageSquare, Activity, ShieldCheck, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle, Users, Info } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE_URL, WS_BASE_URL } from './config';
 
 const SentinelLogo = ({ className = "" }) => (
     <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -62,7 +63,7 @@ export default function SupervisorDashboard() {
     useEffect(() => {
         let reconnectTimeout;
         const connectWs = () => {
-            wsRef.current = new WebSocket('wss://awetales-sentinel.onrender.com/ws/supervisor');
+            wsRef.current = new WebSocket(`${WS_BASE_URL}/ws/supervisor`);
             wsRef.current.onopen = () => setWsStatus('Connected');
             wsRef.current.onmessage = (event) => {
                 try {
@@ -93,12 +94,12 @@ export default function SupervisorDashboard() {
 
     useEffect(() => {
         if (activeTab === 'accounts') {
-            fetch('https://awetales-sentinel.onrender.com/users')
+            fetch(`${API_BASE_URL}/users`)
                 .then(r => r.json())
                 .then(data => setDbUsers(data))
                 .catch(err => console.error("Failed to fetch users", err));
         } else if (activeTab === 'history') {
-            fetch('https://awetales-sentinel.onrender.com/history')
+            fetch(`${API_BASE_URL}/history`)
                 .then(r => r.json())
                 .then(data => setHistory(data))
                 .catch(err => console.error("Failed to fetch history", err));

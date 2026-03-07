@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from './config';
 
 const SentinelLogo = ({ className = "" }) => (
     <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,7 +41,7 @@ export default function Login() {
         setLoading(true);
 
         try {
-            const endpoint = isRegister ? 'https://awetales-sentinel.onrender.com/auth/register' : 'https://awetales-sentinel.onrender.com/auth/login';
+            const endpoint = isRegister ? `${API_BASE_URL}/auth/register` : `${API_BASE_URL}/auth/login`;
             const bodyData = isRegister ? { email, password, role } : { email, password };
 
             const res = await fetch(endpoint, {
@@ -50,7 +51,8 @@ export default function Login() {
             });
 
             if (!res.ok) {
-                throw new Error("Invalid credentials");
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.detail || "Authentication failed");
             }
 
             const data = await res.json();

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Mic, Keyboard, Send, Bot, User, Clock, Info, X, MessageSquarePlus, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL, WS_BASE_URL } from './config';
 
 const SentinelLogo = ({ className = "" }) => (
     <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -167,7 +168,7 @@ export default function AgentDashboard() {
         let reconnectTimeout;
         const connectWs = () => {
             const agentId = user.id || '1';
-            wsRef.current = new WebSocket(`wss://awetales-sentinel.onrender.com/ws/agent/${agentId}`);
+            wsRef.current = new WebSocket(`${WS_BASE_URL}/ws/agent/${agentId}`);
 
             wsRef.current.onopen = () => setWsStatus('Connected');
             wsRef.current.onclose = () => {
@@ -196,7 +197,7 @@ export default function AgentDashboard() {
             setIsAgentTyping(true);
             const transcript = messages.map(m => `${m.role}: ${m.text}`).join('\n');
 
-            fetch('https://awetales-sentinel.onrender.com/agent/reply', {
+            fetch(`${API_BASE_URL}/agent/reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ transcript })
@@ -210,6 +211,15 @@ export default function AgentDashboard() {
 
                     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
                         wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
+                    }
+
+                    // Play agent response using browser's built-in Text-to-Speech
+                    if ('speechSynthesis' in window) {
+                        const utterance = new SpeechSynthesisUtterance(replyText);
+                        // Make the voice sound professional
+                        utterance.pitch = 1;
+                        utterance.rate = 1.05;
+                        window.speechSynthesis.speak(utterance);
                     }
                 })
                 .catch(err => {
