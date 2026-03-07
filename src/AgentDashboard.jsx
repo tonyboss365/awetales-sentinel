@@ -1,8 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { Mic, Keyboard, Send, Bot, User, Clock, Info, X, MessageSquarePlus, LogOut } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
-
+const SentinelLogo = ({ className = "" }) => (
+    <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <mask id="gap-mask">
+                <rect width="100" height="120" fill="white" />
+                <path d="M 50 50 L 45 45 L 50 45 Z" fill="black" />
+            </mask>
+            <mask id="pupil-mask">
+                <rect width="100" height="120" fill="white" />
+            </mask>
+        </defs>
+        <g mask="url(#gap-mask)">
+            <circle cx="50" cy="35" r="22" stroke="currentColor" strokeWidth="6" />
+            <circle cx="50" cy="65" r="22" stroke="currentColor" strokeWidth="6" />
+        </g>
+        <circle cx="50" cy="50" r="4.5" fill="currentColor" mask="url(#pupil-mask)" />
+        <circle cx="50" cy="74" r="3.5" fill="currentColor" />
+        <path d="M 47.5 76 L 45 85 L 55 85 L 52.5 76 Z" fill="currentColor" />
+    </svg>
+);
 
 
 export default function AgentDashboard() {
@@ -153,7 +170,7 @@ export default function AgentDashboard() {
 
             <nav className="sticky top-0 z-50 bg-white/60 backdrop-blur-2xl border-b border-black/5 px-8 py-4 flex justify-between items-center shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center gap-3">
-                    <SentinelLogo className="w-10 h-10 text-black" />
+                    <SentinelLogo className="w-10 h-10 text-black" />                    <SentinelLogo className="w-10 h-10 text-black" />
                     <h1 className="text-2xl font-black text-[#555555] tracking-widest uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>Sentinel</h1>
                     <span className="text-[13px] text-gray-400 font-medium ml-2 hidden sm:block">Agent Terminus</span>
                 </div>

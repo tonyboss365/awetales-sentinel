@@ -1,8 +1,26 @@
-import React from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Database, Cpu, Zap, Activity, Users, Bot } from 'lucide-react';
 
-
+const SentinelLogo = ({ className = "" }) => (
+    <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <mask id="gap-mask">
+                <rect width="100" height="120" fill="white" />
+                <path d="M 50 50 L 45 45 L 50 45 Z" fill="black" />
+            </mask>
+            <mask id="pupil-mask">
+                <rect width="100" height="120" fill="white" />
+            </mask>
+        </defs>
+        <g mask="url(#gap-mask)">
+            <circle cx="50" cy="35" r="22" stroke="currentColor" strokeWidth="6" />
+            <circle cx="50" cy="65" r="22" stroke="currentColor" strokeWidth="6" />
+        </g>
+        <circle cx="50" cy="50" r="4.5" fill="currentColor" mask="url(#pupil-mask)" />
+        <circle cx="50" cy="74" r="3.5" fill="currentColor" />
+        <path d="M 47.5 76 L 45 85 L 55 85 L 52.5 76 Z" fill="currentColor" />
+    </svg>
+);
 export default function Details() {
     const navigate = useNavigate();
 
@@ -17,7 +35,7 @@ export default function Details() {
                 </button>
 
                 <div className="mb-12 text-center md:text-left flex flex-col md:flex-row items-center md:items-end gap-6">
-                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />
+                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-[#555555] tracking-widest uppercase mb-2" style={{ fontFamily: 'Impact, sans-serif' }}>
                             Hackathon Task
