@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Database, Cpu, Zap, Activity, Users, Bot } from 'lucide-react';
-import logo from './assets/logo.png';
+
 
 export default function Details() {
     const navigate = useNavigate();
@@ -18,7 +17,7 @@ export default function Details() {
                 </button>
 
                 <div className="mb-12 text-center md:text-left flex flex-col md:flex-row items-center md:items-end gap-6">
-                    <img src={logo} alt="Sentinel Logo" className="w-24 h-24 object-contain mb-4 md:mb-0" />
+                    <SentinelLogo className="w-24 h-24 mb-4 md:mb-0 text-black" />
                     <div>
                         <h1 className="text-3xl md:text-5xl font-black text-[#555555] tracking-widest uppercase mb-2" style={{ fontFamily: 'Impact, sans-serif' }}>
                             Hackathon Task
