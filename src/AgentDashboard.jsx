@@ -209,11 +209,16 @@ export default function AgentDashboard() {
                 .then(res => res.json())
                 .then(data => {
                     const replyText = data.reply || "I'm sorry, I cannot assist right now.";
-                    const newMsg = { id: Date.now(), role: 'Agent', text: replyText };
+                    
+                    // Clean text for speech (keep basic punctuation for natural pauses, remove markdown symbols)
+                    const speechText = replyText.replace(/[*#~_`[\]{}|\\\/@$%^&+<>=]/g, '').replace(/\s+/g, ' ').trim();
+
+                    const newMsgId = Date.now();
+                    const newMsg = { id: newMsgId, role: 'Agent', text: '' };
                     setMessages(prev => [...prev, newMsg]);
                     setIsAgentTyping(false);
 
-                    // Fire Speech Synthesis in parallel with state updates
+                    // Fire Speech Synthesis immediately (Speech starts, text appears parallelly)
                     if ('speechSynthesis' in window) {
                         isSpeakingRef.current = true;
 
@@ -222,9 +227,9 @@ export default function AgentDashboard() {
                             try { recognitionRef.current.stop(); } catch (e) { }
                         }
 
-                        const utterance = new SpeechSynthesisUtterance(replyText);
+                        const utterance = new SpeechSynthesisUtterance(speechText);
 
-                        // Select the absolute best humanoid TTS available (Microsoft Aria/Zira or Google US)
+                        // Select the absolute best humanoid TTS available
                         let voices = window.speechSynthesis.getVoices();
                         const premiumVoices = ['Microsoft Aria Online', 'Microsoft Jenny Online', 'Google US English', 'Microsoft Zira'];
 
@@ -244,7 +249,7 @@ export default function AgentDashboard() {
 
                         // Normalizing pitch/rate makes modern TTS sound significantly more human
                         utterance.pitch = 1.0;
-                        utterance.rate = 1.0;
+                        utterance.rate = 1.05;
 
                         utterance.onend = () => {
                             isSpeakingRef.current = false;
@@ -263,9 +268,27 @@ export default function AgentDashboard() {
                         window.speechSynthesis.speak(utterance);
                     }
 
-                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                        wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
-                    }
+                    // Simulated streaming typing effect so text appears parallel to speech
+                    let i = 0;
+                    const estimatedDuration = speechText.length * 75; // Roughly estimate speech duration
+                    const typingSpeed = Math.min(estimatedDuration / replyText.length, 50); // Calculate realistic typing speed to match speech
+
+                    const typeInterval = setInterval(() => {
+                        setMessages(prev => 
+                            prev.map(msg => 
+                                msg.id === newMsgId 
+                                    ? { ...msg, text: replyText.substring(0, i + 1) } 
+                                    : msg
+                            )
+                        );
+                        i++;
+                        if (i >= replyText.length) {
+                            clearInterval(typeInterval);
+                            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                                wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
+                            }
+                        }
+                    }, typingSpeed);
                 })
                 .catch(err => {
                     console.error("AI Reply failed:", err);
