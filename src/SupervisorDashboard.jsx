@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, MessageSquare, Activity, ShieldCheck, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle, Users, Info } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import logo from './assets/logo.png';
 
 const AnimatedLabel = ({ icon: Icon, label }) => (
     <motion.div
@@ -23,28 +24,7 @@ const getSentimentIcon = (sentiment) => {
     }
 };
 
-const SentinelLogo = ({ className = "" }) => (
-    <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <mask id="gap-mask">
-                <rect width="100" height="120" fill="white" />
-                <circle cx="69" cy="43" r="6" fill="black" />
-                <circle cx="31" cy="57" r="6" fill="black" />
-            </mask>
-            <mask id="pupil-mask">
-                <rect width="100" height="120" fill="white" />
-                <path d="M 50 50 L 45 45 L 50 45 Z" fill="black" />
-            </mask>
-        </defs>
-        <g mask="url(#gap-mask)">
-            <circle cx="50" cy="35" r="22" stroke="currentColor" strokeWidth="6" />
-            <circle cx="50" cy="65" r="22" stroke="currentColor" strokeWidth="6" />
-        </g>
-        <circle cx="50" cy="50" r="4.5" fill="currentColor" mask="url(#pupil-mask)" />
-        <circle cx="50" cy="74" r="3.5" fill="currentColor" />
-        <path d="M 47.5 76 L 45 85 L 55 85 L 52.5 76 Z" fill="currentColor" />
-    </svg>
-);
+
 
 export default function SupervisorDashboard() {
     const navigate = useNavigate();
@@ -121,7 +101,7 @@ export default function SupervisorDashboard() {
             {/* Top Navbar */}
             <nav className="sticky top-0 z-50 bg-white/60 backdrop-blur-2xl border-b border-black/5 px-8 py-4 flex justify-between items-center shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
                 <div className="flex items-center gap-3">
-                    <SentinelLogo className="w-8 h-10 text-[#555555]" />
+                    <img src={logo} alt="Sentinel Logo" className="w-10 h-10 object-contain" />
                     <h1 className="text-2xl font-black text-[#555555] tracking-widest uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>Sentinel</h1>
                     <span className="text-[13px] text-gray-400 font-medium ml-2 hidden sm:block">Director Overview</span>
                 </div>

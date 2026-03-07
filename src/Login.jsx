@@ -1,29 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import logo from './assets/logo.png';
 
-const SentinelLogo = ({ className = "" }) => (
-    <svg className={className} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <mask id="gap-mask">
-                <rect width="100" height="120" fill="white" />
-                <circle cx="69" cy="43" r="6" fill="black" />
-                <circle cx="31" cy="57" r="6" fill="black" />
-            </mask>
-            <mask id="pupil-mask">
-                <rect width="100" height="120" fill="white" />
-                <path d="M 50 50 L 45 45 L 50 45 Z" fill="black" />
-            </mask>
-        </defs>
-        <g mask="url(#gap-mask)">
-            <circle cx="50" cy="35" r="22" stroke="currentColor" strokeWidth="6" />
-            <circle cx="50" cy="65" r="22" stroke="currentColor" strokeWidth="6" />
-        </g>
-        <circle cx="50" cy="50" r="4.5" fill="currentColor" mask="url(#pupil-mask)" />
-        <circle cx="50" cy="74" r="3.5" fill="currentColor" />
-        <path d="M 47.5 76 L 45 85 L 55 85 L 52.5 76 Z" fill="currentColor" />
-    </svg>
-);
+
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -76,7 +56,7 @@ export default function Login() {
                 className="w-full max-w-md p-8 glass-panel rounded-[2rem] shadow-2xl bg-white/60 backdrop-blur-xl border border-black/5 z-10"
             >
                 <div className="flex flex-col items-center mb-8">
-                    <SentinelLogo className="w-16 h-20 text-[#555555] mb-4" />
+                    <img src={logo} alt="Sentinel Logo" className="w-20 h-20 mb-4 object-contain" />
                     <h1 className="text-3xl font-black text-[#555555] tracking-widest uppercase text-center" style={{ fontFamily: 'Impact, sans-serif' }}>Sentinel</h1>
                     <p className="text-gray-500 mt-2 text-sm font-medium">Enterprise Communications Intelligence</p>
                 </div>

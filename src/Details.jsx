@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Database, Cpu, Zap, Activity, Users, Bot } from 'lucide-react';
+import logo from './assets/logo.png';
 
 export default function Details() {
     const navigate = useNavigate();
@@ -16,15 +17,7 @@ export default function Details() {
                     <ArrowLeft size={16} /> Back
                 </button>
 
-                <div className="mb-12 text-center md:text-left">
-                    <h1 className="text-3xl md:text-5xl font-black text-[#555555] tracking-widest uppercase mb-4" style={{ fontFamily: 'Impact, sans-serif' }}>
-                        Hackathon Task
-                    </h1>
-                    <p className="text-xl md:text-2xl text-black font-bold mb-2">Real-Time Conversation Analytics from Streaming ASR</p>
-                    <p className="text-md text-gray-600 font-medium max-w-2xl mx-auto md:mx-0">
-                        A real-time conversation analytics module that processes streaming text output, analyzing live conversations to extract structured insights including intent, topic, sentiment, and escalation risk using Large Language Models.
-                    </p>
-                </div>
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Team Info */}
