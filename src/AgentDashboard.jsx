@@ -32,6 +32,7 @@ export default function AgentDashboard() {
     const [inputText, setInputText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const isListeningRef = useRef(false);
+    const isSpeakingRef = useRef(false);
     const [interimTranscript, setInterimTranscript] = useState('');
 
     const [wsStatus, setWsStatus] = useState('Disconnected');
@@ -69,6 +70,9 @@ export default function AgentDashboard() {
         };
 
         recognition.onresult = (event) => {
+            // Prevent microphone from picking up the AI Agent's Text-to-Speech output
+            if (isSpeakingRef.current) return;
+
             let final = '';
             let interim = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -215,10 +219,32 @@ export default function AgentDashboard() {
 
                     // Play agent response using browser's built-in Text-to-Speech
                     if ('speechSynthesis' in window) {
+                        isSpeakingRef.current = true;
+                        // Optional: Temporarily suspend recognition while speaking for guaranteed silence
+                        if (isListeningRef.current && recognitionRef.current) {
+                            try { recognitionRef.current.stop(); } catch (e) { }
+                        }
+
                         const utterance = new SpeechSynthesisUtterance(replyText);
-                        // Make the voice sound professional
-                        utterance.pitch = 1;
+
+                        // Select a humanoid/natural voice over robotic system defaults
+                        let voices = window.speechSynthesis.getVoices();
+                        const humanoidVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Online') || v.name.includes('Google')))
+                            || voices.find(v => v.lang.startsWith('en'));
+                        if (humanoidVoice) utterance.voice = humanoidVoice;
+
+                        utterance.pitch = 1.05;
                         utterance.rate = 1.05;
+
+                        utterance.onend = () => {
+                            isSpeakingRef.current = false;
+                            // Resume listening if we were listening before
+                            if (isListeningRef.current && inputMode === 'voice' && recognitionRef.current) {
+                                try { recognitionRef.current.start(); } catch (e) { }
+                            }
+                        };
+                        utterance.onerror = () => { isSpeakingRef.current = false; };
+
                         window.speechSynthesis.speak(utterance);
                     }
                 })
