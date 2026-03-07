@@ -70,9 +70,9 @@ export default function Details() {
                         </ul>
                     </div>
 
-                    <div className="p-8 glass-panel rounded-[2rem] bg-black text-white border border-black/5 shadow-xl">
-                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 uppercase tracking-tighter italic text-white/90">
-                            <Activity size={20} className="text-white" /> Intelligence Extracted
+                    <div className="p-8 glass-panel rounded-[2rem] bg-white/60 border border-black/5 shadow-xl">
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 uppercase tracking-tighter italic text-black/90">
+                            <Activity size={20} className="text-black" /> Intelligence Extracted
                         </h2>
                         <div className="grid grid-cols-2 gap-4">
                             {[
@@ -81,9 +81,9 @@ export default function Details() {
                                 { label: 'Sentiment', color: 'bg-green-500' },
                                 { label: 'Escalation', color: 'bg-red-500' }
                             ].map((item) => (
-                                <div key={item.label} className="p-4 bg-white/10 rounded-2xl border border-white/10">
+                                <div key={item.label} className="p-4 bg-black/5 rounded-2xl border border-black/5">
                                     <div className={`w-2 h-2 rounded-full ${item.color} mb-2`} />
-                                    <span className="text-[12px] font-bold uppercase tracking-widest opacity-60">{item.label}</span>
+                                    <span className="text-[12px] font-bold uppercase tracking-widest text-gray-600">{item.label}</span>
                                 </div>
                             ))}
                         </div>
