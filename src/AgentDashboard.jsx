@@ -27,7 +27,7 @@ const SentinelLogo = ({ className = "" }) => (
 export default function AgentDashboard() {
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
-    const [inputMode, setInputMode] = useState('voice'); // Voice is the "premium" default
+    const [inputMode, setInputMode] = useState('voice');
     const [inputText, setInputText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [interimTranscript, setInterimTranscript] = useState('');
@@ -50,51 +50,87 @@ export default function AgentDashboard() {
     // --- SPEECH RECOGNITION SETUP ---
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = true;
-            recognitionRef.current.interimResults = true;
-
-            recognitionRef.current.onresult = (event) => {
-                let final = '';
-                let interim = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        final += event.results[i][0].transcript;
-                    } else {
-                        interim += event.results[i][0].transcript;
-                    }
-                }
-                if (final) {
-                    handleMessageSubmit(final);
-                    setInterimTranscript('');
-                } else {
-                    setInterimTranscript(interim);
-                }
-            };
-
-            recognitionRef.current.onerror = (event) => {
-                console.error('Speech recognition error', event.error);
-                setIsListening(false);
-            };
-
-            recognitionRef.current.onend = () => {
-                if (isListening) recognitionRef.current.start();
-            };
+        if (!SpeechRecognition) {
+            console.warn("Speech Recognition API not supported in this browser.");
+            return;
         }
-        return () => {
-            if (recognitionRef.current) recognitionRef.current.stop();
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => {
+            setIsListening(true);
         };
-    }, [isListening]);
+
+        recognition.onresult = (event) => {
+            let final = '';
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    final += event.results[i][0].transcript;
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
+            }
+
+            if (final) {
+                handleMessageSubmit(final);
+                setInterimTranscript('');
+            } else {
+                setInterimTranscript(interim);
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            if (event.error === 'not-allowed') {
+                alert("Microphone access denied. Please enable it in your browser settings to use voice input.");
+            }
+            setIsListening(false);
+        };
+
+        recognition.onend = () => {
+            // Only restart if we're supposed to be listening and it wasn't an error stop
+            if (isListening) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error("Failed to restart recognition:", e);
+                }
+            }
+        };
+
+        recognitionRef.current = recognition;
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.onend = null; // Prevent restart on unmount
+                recognitionRef.current.stop();
+            }
+        };
+    }, []);
 
     const toggleListening = () => {
+        if (!recognitionRef.current) {
+            alert("Speech recognition is not supported in your browser.");
+            return;
+        }
+
         if (isListening) {
-            recognitionRef.current?.stop();
+            recognitionRef.current.stop();
             setIsListening(false);
             setInterimTranscript('');
         } else {
-            recognitionRef.current?.start();
-            setIsListening(true);
+            try {
+                recognitionRef.current.start();
+            } catch (e) {
+                console.error("Recognition start failed:", e);
+                // Attempt to stop and restart if already running
+                recognitionRef.current.stop();
+                setTimeout(() => recognitionRef.current.start(), 100);
+            }
         }
     };
 
@@ -124,7 +160,6 @@ export default function AgentDashboard() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, interimTranscript, isAgentTyping]);
 
-    // Auto-reply logic for Agent simulation
     useEffect(() => {
         if (messages.length === 0) return;
         const lastMsg = messages[messages.length - 1];
@@ -152,12 +187,6 @@ export default function AgentDashboard() {
                 .catch(err => {
                     console.error("AI Reply failed:", err);
                     setIsAgentTyping(false);
-                    const errorMsg = {
-                        id: Date.now(),
-                        role: 'Agent',
-                        text: "⚠️ [Technical Difficulty] I cannot generate a response right now. Please check your Render environment variables."
-                    };
-                    setMessages(prev => [...prev, errorMsg]);
                 });
         }
     }, [messages]);
@@ -241,7 +270,7 @@ export default function AgentDashboard() {
                                 <Mic size={14} /> Voice
                             </button>
                             <button
-                                onClick={() => { setInputMode('type'); setIsListening(false); recognitionRef.current?.stop(); }}
+                                onClick={() => { setInputMode('type'); setIsListening(false); if (recognitionRef.current) recognitionRef.current.stop(); }}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'type' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
                             >
                                 <Keyboard size={14} /> Type
@@ -249,7 +278,7 @@ export default function AgentDashboard() {
                         </div>
                     </div>
 
-                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth z-0 bg-white/20">
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth z-0 bg-white/5">
                         <AnimatePresence mode="popLayout">
                             {messages.length === 0 && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50 space-y-4">
@@ -272,20 +301,22 @@ export default function AgentDashboard() {
                                     </div>
                                 </motion.div>
                             ))}
-                            {isAgentTyping && (
-                                <motion.div key="typing-indicator" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-black/5 shadow-sm">
-                                        <Bot size={14} className="text-gray-400" />
-                                    </div>
-                                    <div className="bg-white/50 px-4 py-2 rounded-2xl rounded-bl-none border border-black/5">
-                                        <div className="flex gap-1">
-                                            {[0, 1, 2].map((i) => (
-                                                <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
-                                            ))}
+                            <AnimatePresence>
+                                {isAgentTyping && (
+                                    <motion.div key="typing-indicator" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-black/5 shadow-sm">
+                                            <Bot size={14} className="text-gray-400" />
                                         </div>
-                                    </div>
-                                </motion.div>
-                            )}
+                                        <div className="bg-white/50 px-4 py-2 rounded-2xl rounded-bl-none border border-black/5">
+                                            <div className="flex gap-1">
+                                                {[0, 1, 2].map((i) => (
+                                                    <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                             {interimTranscript && (
                                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end pr-11">
                                     <div className="bg-black/5 text-gray-500 italic text-[13px] px-4 py-2 rounded-2xl rounded-br-none">
