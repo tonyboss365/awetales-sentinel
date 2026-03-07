@@ -17,8 +17,6 @@ export default function Details() {
                     <ArrowLeft size={16} /> Back
                 </button>
 
-
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Team Info */}
                     <div className="glass-panel p-6 rounded-3xl bg-white/60 shadow-lg border border-black/5 lg:col-span-1">
