@@ -223,25 +223,26 @@ manager = ConnectionManager()
 
 SYSTEM_PROMPT = """
 You are AweTales Sentinel, an elite, ultra-fast enterprise AI analytics engine.
-Analyze the FULL conversation transcript and output strictly valid JSON.
+Analyze the FULL conversation transcript, prioritizing the MOST RECENT exchange for sentiment and risk, and output strictly valid JSON.
 
 ═══ SENTIMENT RULES (strict) ═══
-- Positive: satisfied, calm, thanking, agreeable
-- Neutral: factual, inquiries, polite
-- Negative: angry, "unacceptable", "worst", "refund", "lawsuit", "frustrated", all caps
+- Positive: satisfied, calm, thanking, agreeable, "happy", "great", "thanks"
+- Neutral: factual, inquiries, polite, "how do I", "where is"
+- Negative: angry, "unacceptable", "worst", "refund", "lawsuit", "frustrated", all caps, "broke", "not working"
 
 ═══ ESCALATION RISK (strict criteria) ═══
-- low: calm routine inquiry or first contact
-- medium: repeated issue, waiting too long, minor frustration ("still not fixed")
-- high: demands manager/supervisor, refund, legal action, extreme anger
+- low: calm routine inquiry or first contact, or positive feedback
+- medium: repeated issue, waiting too long, minor frustration ("still not fixed"), or unresolved factual inquiry
+- high: demands manager/supervisor, refund, legal action, extreme anger, "I'm leaving", "cancel my account"
 
 ═══ RECOVERY DYNAMICS ═══
 - If customer calms down ("okay", "fine", "thanks", "willing to wait") AFTER being angry → DROP escalation_risk by one level (e.g., high → medium).
+- If the latest message is a "thank you" or "okay", the risk should likely be 'low'.
 
 ═══ CONFIDENCE SCORING ═══
-- 1 message: 0.60-0.70
-- 2-3 messages: 0.75-0.85
-- 4+ messages or distinct anger triggers: 0.90+
+- 1 message: 0.60-0.75
+- 2-3 messages: 0.80-0.88
+- 4+ messages or distinct triggers: 0.92+
 
 Return ONLY JSON:
 {"intent": "brief intent (max 4 words)", "topic": "brief topic (max 4 words)", "sentiment": "Positive|Neutral|Negative", "escalation_risk": "low|medium|high", "confidence": float}
@@ -264,9 +265,8 @@ async def analyze_conversation(transcript: str) -> dict:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"Analyze this full transcript:\n\n{transcript}"}
             ],
-            temperature=0.05,
-            max_tokens=60,
-            seed=42
+            temperature=0.1,
+            max_tokens=60
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
@@ -282,7 +282,8 @@ async def health():
 AGENT_REPLY_PROMPT = """
 You are a helpful, professional, and empathetic customer support agent for AweTales.
 Review the conversation transcript and provide the next logical response to the customer.
-Keep your response concise, friendly, and directly addressing their concern. 
+Keep your response concise, friendly, and directly addressing their LATEST concern.
+Avoid being repetitive. If the user says 'Hi', don't just say 'Hi' back every time, offer assistance.
 Do not use placeholders like [Insert Name] or [Link]. Assume you have access to their account.
 """
 
@@ -295,7 +296,7 @@ async def generate_agent_reply(req: AgentReplyRequest):
                 {"role": "system", "content": AGENT_REPLY_PROMPT},
                 {"role": "user", "content": f"Transcript so far:\n{req.transcript}\n\nAgent Reply:"}
             ],
-            temperature=0.3,
+            temperature=0.7,
             max_tokens=100
         )
         reply = response.choices[0].message.content.strip()
