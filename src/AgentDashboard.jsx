@@ -43,6 +43,7 @@ export default function AgentDashboard() {
     const messagesEndRef = useRef(null);
     const chatScrollRef = useRef(null);
     const [isAgentTyping, setIsAgentTyping] = useState(false);
+    const lastSentTranscriptRef = useRef('');
 
     const { scrollY } = useScroll();
     const leftOrbY = useTransform(scrollY, [0, 500], [0, 100]);
@@ -198,8 +199,13 @@ export default function AgentDashboard() {
         const lastMsg = messages[messages.length - 1];
 
         if (lastMsg.role === 'Customer') {
-            setIsAgentTyping(true);
             const transcript = messages.map(m => `${m.role}: ${m.text}`).join('\n');
+            
+            // Prevent duplicate requests if transcript hasn't changed
+            if (transcript === lastSentTranscriptRef.current) return;
+            lastSentTranscriptRef.current = transcript;
+
+            setIsAgentTyping(true);
 
             fetch(`${API_BASE_URL}/agent/reply`, {
                 method: 'POST',
