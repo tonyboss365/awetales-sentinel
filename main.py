@@ -26,6 +26,13 @@ client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
+# Startup diagnostic
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    print("CRITICAL: OPENAI_API_KEY not found in environment!")
+else:
+    print(f"INFO: OPENAI_API_KEY found (length: {len(api_key)})")
+
 # --- DATABASE SETUP ---
 DB_FILE = "sentinel.db"
 
@@ -302,8 +309,12 @@ async def generate_agent_reply(req: AgentReplyRequest):
         reply = response.choices[0].message.content.strip()
         return {"reply": reply}
     except Exception as e:
-        print(f"[REPLY ERROR] {e}")
-        return {"reply": "I'm sorry, I am experiencing technical difficulties finding that information. Could you hold a moment?"}
+        import traceback
+        error_msg = str(e)
+        print(f"[REPLY ERROR] {error_msg}")
+        traceback.print_exc()
+        # Return a slightly more helpful error for debugging production (hide the key but show the error type)
+        return {"reply": f"I'm sorry, I'm having trouble connecting to the AI: {error_msg[:100]}..."}
 
 @app.websocket("/ws/agent/{agent_id}")
 async def websocket_agent_endpoint(websocket: WebSocket, agent_id: str):
