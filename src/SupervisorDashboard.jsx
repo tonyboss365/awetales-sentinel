@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, MessageSquare, Activity, ShieldCheck, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle, Users, Info } from 'lucide-react';
+import { Target, MessageSquare, Activity, ShieldCheck, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle, Users, Info, HeartPulse, Smile, Frown, Zap, Briefcase, User as UserIcon, Bot } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE_URL, WS_BASE_URL } from './config';
 
@@ -314,6 +314,30 @@ export default function SupervisorDashboard() {
                                                         </div>
                                                     );
                                                 })}
+                                            </div>
+                                        </motion.div>
+
+                                        {/* NEW AI EMOTION CARD */}
+                                        <motion.div className="p-5 glass-card bg-white rounded-2xl border border-black/5 shadow-sm col-span-2 relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                            <AnimatedLabel icon={Bot} label="AI Generated Emotion" />
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors border ${
+                                                    selectedAgent.latest_agent_emotion === 'empathy' ? 'bg-pink-100 border-pink-200 text-pink-600' :
+                                                    selectedAgent.latest_agent_emotion === 'joy' ? 'bg-green-100 border-green-200 text-green-600' :
+                                                    selectedAgent.latest_agent_emotion === 'urgency' ? 'bg-orange-100 border-orange-200 text-orange-600' :
+                                                    selectedAgent.latest_agent_emotion === 'sadness' ? 'bg-blue-100 border-blue-200 text-blue-600' : 'bg-gray-100 border-gray-200 text-gray-600'
+                                                }`}>
+                                                    {selectedAgent.latest_agent_emotion === 'empathy' ? <HeartPulse size={24} /> :
+                                                     selectedAgent.latest_agent_emotion === 'joy' ? <Smile size={24} /> :
+                                                     selectedAgent.latest_agent_emotion === 'urgency' ? <Zap size={24} /> :
+                                                     selectedAgent.latest_agent_emotion === 'sadness' ? <Frown size={24} /> : 
+                                                     <Briefcase size={24} />}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[12px] uppercase tracking-widest font-bold text-gray-400">Current Voice Synthesis</span>
+                                                    <span className="text-xl font-bold text-black capitalize">{selectedAgent.latest_agent_emotion || "Neutral"}</span>
+                                                </div>
                                             </div>
                                         </motion.div>
 

@@ -25,6 +25,30 @@ const SentinelLogo = ({ className = "" }) => (
     </svg>
 );
 
+const VoiceWaveform = ({ isSpeaking }) => (
+    <div className="flex items-center gap-1 h-8">
+        {[...Array(8)].map((_, i) => (
+            <motion.div
+                key={i}
+                animate={isSpeaking ? { 
+                    height: [4, 12 + Math.random() * 20, 4],
+                    opacity: [0.3, 1, 0.3]
+                } : { 
+                    height: 4, 
+                    opacity: 0.2 
+                }}
+                transition={{ 
+                    duration: 0.5, 
+                    repeat: Infinity, 
+                    delay: i * 0.05 
+                }}
+                className="w-1.5 bg-black rounded-full"
+            />
+        ))}
+    </div>
+);
+
+
 export default function AgentDashboard() {
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
@@ -44,6 +68,17 @@ export default function AgentDashboard() {
     const chatScrollRef = useRef(null);
     const [isAgentTyping, setIsAgentTyping] = useState(false);
     const lastSentTranscriptRef = useRef('');
+    const [elevenApiKey, setElevenApiKey] = useState('');
+    const [selectedVoiceId, setSelectedVoiceId] = useState('txk8uOzZ0iCh0B9mFSRG'); // Personal Cloned Voice
+    const [isActuallySpeaking, setIsActuallySpeaking] = useState(false);
+
+    const voices = [
+        { name: 'My Voice', id: 'txk8uOzZ0iCh0B9mFSRG', type: 'Personal Clone' },
+        { name: 'Aria', id: '9BWtsmmsvUzG9Z7N9vqd', type: 'Professional & Warm' },
+        { name: 'Chris', id: 'iP95p4H8NoX7uK9Cj0L0', type: 'Deep & Trusted' },
+        { name: 'Sarah', id: 'EXAVITQu4vr4xnSDxMaL', type: 'Soft & Kind' }
+    ];
+
 
     const { scrollY } = useScroll();
     const leftOrbY = useTransform(scrollY, [0, 500], [0, 100]);
@@ -138,6 +173,15 @@ export default function AgentDashboard() {
         };
     }, []);
 
+    useEffect(() => {
+        fetch(`${API_BASE_URL}/health`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.eleven_key) setElevenApiKey(data.eleven_key);
+            })
+            .catch(err => console.error("Health check failed", err));
+    }, []);
+
     const toggleListening = () => {
         if (!recognitionRef.current) {
             alert("Speech recognition is not supported in your browser.");
@@ -154,6 +198,11 @@ export default function AgentDashboard() {
             console.log("Starting recognition manually...");
             try {
                 isListeningRef.current = true;
+                // Resume audio context on user interaction to fix browser blocking
+                if (window.AudioContext || window.webkitAudioContext) {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (ctx.state === 'suspended') ctx.resume();
+                }
                 recognitionRef.current.start();
                 // State update handled by onstart
             } catch (e) {
@@ -215,125 +264,125 @@ export default function AgentDashboard() {
                 .then(res => res.json())
                 .then(data => {
                     const replyText = data.reply || "I'm sorry, I cannot assist right now.";
+                    const emotion = data.emotion || "neutral";
                     
                     // Clean text for speech (keep basic punctuation for natural pauses, remove markdown symbols)
                     const speechText = replyText.replace(/[*#~_`[\]{}|\\\/@$%^&+<>=]/g, '').replace(/\s+/g, ' ').trim();
 
                     const newMsgId = Date.now();
-                    const newMsg = { id: newMsgId, role: 'Agent', text: '' };
+                    const newMsg = { id: newMsgId, role: 'Agent', text: '', emotion: emotion };
                     setMessages(prev => [...prev, newMsg]);
                     setIsAgentTyping(false);
 
-                    // Fire Speech Synthesis immediately (Speech starts, text appears parallelly)
-                    if ('speechSynthesis' in window) {
-                        isSpeakingRef.current = true;
+                    // TTS AND TYPING LOGIC
+                    const startTyping = () => {
+                        let i = 0;
+                        const typingSpeed = Math.max(20, (speechText.length * 40) / Math.max(replyText.length, 1));
+                        const interval = setInterval(() => {
+                            setMessages(prev => prev.map(msg => 
+                                msg.id === newMsgId ? { ...msg, text: replyText.substring(0, i + 1) } : msg
+                            ));
+                            i++;
+                            if (i >= replyText.length) clearInterval(interval);
+                        }, typingSpeed);
+                        return interval;
+                    };
 
-                        // Briefly pause recognition so the mic doesn't catch the AI's own voice
+                    const handleAfterSpeech = () => {
+                        isSpeakingRef.current = false;
+                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                            wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText, emotion: emotion }));
+                        }
+                        if (isListeningRef.current && inputMode === 'voice' && recognitionRef.current) {
+                            try { recognitionRef.current.start(); } catch (e) { }
+                        }
+                    };
+
+                    if (elevenApiKey) {
+                        isSpeakingRef.current = true;
+                        if (isListeningRef.current && recognitionRef.current) {
+                            try { recognitionRef.current.stop(); } catch (e) { }
+                        }
+
+                        let stability = 0.5, similarity_boost = 0.75, style = 0.0;
+                        switch (emotion) {
+                            case 'empathy': stability = 0.35; similarity_boost = 0.8; style = 0.4; break;
+                            case 'joy': stability = 0.6; similarity_boost = 0.7; style = 0.2; break;
+                            case 'urgency': stability = 0.45; similarity_boost = 0.9; style = 0.5; break;
+                            case 'sadness': stability = 0.25; similarity_boost = 0.85; style = 0.3; break;
+                            default: stability = 0.5; similarity_boost = 0.75;
+                        }
+
+                        console.log("Attempting ElevenLabs TTS with Voice ID:", selectedVoiceId);
+                        fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'xi-api-key': elevenApiKey },
+                            body: JSON.stringify({
+                                text: speechText,
+                                model_id: "eleven_monolingual_v1",
+                                voice_settings: { stability, similarity_boost, style, use_speaker_boost: true }
+                            })
+                        })
+                        .then(async res => {
+                            if (!res.ok) {
+                                const errorText = await res.text();
+                                console.error(`ElevenLabs API Error (${res.status}):`, errorText);
+                                throw new Error(`ElevenLabs error: ${res.status}`);
+                            }
+                            return res.blob();
+                        })
+                        .then(blob => {
+                            console.log("ElevenLabs audio blob received, playing...");
+                            const audio = new Audio(URL.createObjectURL(blob));
+                            audio.onplay = () => {
+                                setIsActuallySpeaking(true);
+                                startTyping();
+                            };
+                            audio.onended = () => {
+                                setIsActuallySpeaking(false);
+                                handleAfterSpeech();
+                            };
+                            audio.play().catch(e => {
+                                console.error("Audio playback failed (browser may be blocking autoplay):", e);
+                                startTyping();
+                                handleAfterSpeech();
+                            });
+                        })
+                        .catch(err => {
+                            console.error("ElevenLabs critical failure, falling back to browser TTS:", err);
+                            startTyping();
+                            handleAfterSpeech();
+                        });
+                    } else if ('speechSynthesis' in window) {
+                        isSpeakingRef.current = true;
+                        setIsActuallySpeaking(true);
                         if (isListeningRef.current && recognitionRef.current) {
                             try { recognitionRef.current.stop(); } catch (e) { }
                         }
 
                         const utterance = new SpeechSynthesisUtterance(speechText);
-
-                        // Select the absolute best humanoid TTS available
-                        let voices = window.speechSynthesis.getVoices();
-                        const premiumVoices = ['Microsoft Aria Online', 'Microsoft Jenny Online', 'Google US English', 'Microsoft Zira'];
-
-                        let selectedVoice = null;
-                        for (let premium of premiumVoices) {
-                            selectedVoice = voices.find(v => v.name.includes(premium));
-                            if (selectedVoice) break;
-                        }
-
-                        // Fallback to any natural English voice
-                        if (!selectedVoice) {
-                            selectedVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Online')))
-                                || voices.find(v => v.lang.startsWith('en-US'));
-                        }
+                        let voicesList = window.speechSynthesis.getVoices();
+                        let selectedVoice = voicesList.find(v => v.name.includes('Aria') || v.name.includes('Jenny')) 
+                                         || voicesList.find(v => v.lang.startsWith('en-US'));
 
                         if (selectedVoice) utterance.voice = selectedVoice;
-
-                        // Normalizing pitch/rate makes modern TTS sound significantly more human
-                        utterance.pitch = 1.0;
-                        utterance.rate = 1.05;
-
-                        let typeInterval = null;
-
-                        utterance.onstart = () => {
-                            // Start filling text only when voice actually begins computing and playing (removes delay sync issues)
-                            const typingSpeed = (speechText.length * 60) / Math.max(replyText.length, 1);
-                            typeInterval = setInterval(() => {
-                                setMessages(prev => 
-                                    prev.map(msg => {
-                                        if (msg.id === newMsgId && msg.text.length < replyText.length) {
-                                            return { ...msg, text: replyText.substring(0, msg.text.length + 1) };
-                                        }
-                                        return msg;
-                                    })
-                                );
-                            }, typingSpeed);
-                        };
-
-                        utterance.onboundary = (event) => {
-                            if (event.name === 'word') {
-                                // Ensure text keeps up with speech accurately by syncing word boundaries
-                                const progress = Math.min(event.charIndex / speechText.length, 1);
-                                const targetLength = Math.floor(progress * replyText.length) + 8; // Small lookahead
-                                
-                                setMessages(prev => 
-                                    prev.map(msg => {
-                                        if (msg.id === newMsgId) {
-                                            const newLen = Math.max(msg.text.length, targetLength);
-                                            return { ...msg, text: replyText.substring(0, Math.min(newLen, replyText.length)) };
-                                        }
-                                        return msg;
-                                    })
-                                );
-                            }
-                        };
-
+                        
+                        let tInt = null;
+                        utterance.onstart = () => { tInt = startTyping(); };
                         utterance.onend = () => {
-                            isSpeakingRef.current = false;
-                            if (typeInterval) clearInterval(typeInterval);
-                            
-                            // Ensure text is fully complete
-                            setMessages(prev => prev.map(msg => msg.id === newMsgId ? { ...msg, text: replyText } : msg));
-                            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                                wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
-                            }
-
-                            // Resume listening to the customer seamlessly
-                            if (isListeningRef.current && inputMode === 'voice' && recognitionRef.current) {
-                                try { recognitionRef.current.start(); } catch (e) { }
-                            }
+                            setIsActuallySpeaking(false);
+                            if (tInt) clearInterval(tInt);
+                            setMessages(prev => prev.map(m => m.id === newMsgId ? { ...m, text: replyText } : m));
+                            handleAfterSpeech();
                         };
-
-                        utterance.onerror = (e) => {
-                            console.error("Speech Synthesis Error:", e);
-                            isSpeakingRef.current = false;
-                            if (typeInterval) clearInterval(typeInterval);
-                            setMessages(prev => prev.map(msg => msg.id === newMsgId ? { ...msg, text: replyText } : msg));
-                        };
-
-                        // Speak immediately
                         window.speechSynthesis.speak(utterance);
                     } else {
-                        // Fallback if no speech synthesis supported
-                        let i = 0;
-                        const typeInterval = setInterval(() => {
-                            setMessages(prev => 
-                                prev.map(msg => 
-                                    msg.id === newMsgId ? { ...msg, text: replyText.substring(0, i + 1) } : msg
-                                )
-                            );
-                            i++;
-                            if (i >= replyText.length) {
-                                clearInterval(typeInterval);
-                                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                                    wsRef.current.send(JSON.stringify({ role: 'Agent', text: replyText }));
-                                }
-                            }
-                        }, 50);
+                        setIsActuallySpeaking(true);
+                        startTyping();
+                        setTimeout(() => {
+                            setIsActuallySpeaking(false);
+                            handleAfterSpeech();
+                        }, 2000);
                     }
                 })
                 .catch(err => {
@@ -341,7 +390,8 @@ export default function AgentDashboard() {
                     setIsAgentTyping(false);
                 });
         }
-    }, [messages]);
+    }, [messages, elevenApiKey, selectedVoiceId]);
+
 
     const handleMessageSubmit = (text) => {
         if (!text.trim()) return;
@@ -393,6 +443,20 @@ export default function AgentDashboard() {
                     </div>
 
                     <div className="flex bg-black/5 p-1 rounded-full border border-black/5">
+                        <button 
+                            onClick={() => {
+                                if ('speechSynthesis' in window) {
+                                    const u = new SpeechSynthesisUtterance("Audio system test. If you hear this, sound is working.");
+                                    window.speechSynthesis.speak(u);
+                                } else {
+                                    alert("Your browser does not support Speech Synthesis.");
+                                }
+                            }}
+                            className="p-2 text-blue-500 hover:text-blue-700 transition-colors" 
+                            title="Test Audio Output"
+                        >
+                            <Bot size={18} />
+                        </button>
                         <button onClick={() => setMessages([])} className="p-2 text-gray-500 hover:text-black transition-colors" title="Clear Chat">
                             <MessageSquarePlus size={18} />
                         </button>
@@ -412,23 +476,43 @@ export default function AgentDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     className="w-full h-[75vh] glass-panel rounded-[2.5rem] bg-white/40 shadow-2xl border border-black/5 flex flex-col overflow-hidden relative"
                 >
-                    <div className="px-8 py-5 border-b border-black/5 bg-white/60 backdrop-blur-md flex justify-between items-center z-10 shrink-0">
-                        <h2 className="font-semibold text-black text-[15px]">Active Call Session</h2>
-                        <div className="flex bg-black/5 p-1 rounded-xl border border-black/5">
-                            <button
-                                onClick={() => { setInputMode('voice'); setInputText(''); }}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'voice' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                <Mic size={14} /> Voice
-                            </button>
-                            <button
-                                onClick={() => { setInputMode('type'); setIsListening(false); if (recognitionRef.current) recognitionRef.current.stop(); }}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'type' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                                <Keyboard size={14} /> Type
-                            </button>
+                    <div className="px-8 py-5 border-b border-black/5 bg-white/60 backdrop-blur-md flex flex-wrap justify-between items-center z-10 shrink-0 gap-4">
+                        <div className="flex items-center gap-4">
+                            <h2 className="font-semibold text-black text-[15px]">Active Call Session</h2>
+                            <VoiceWaveform isSpeaking={isActuallySpeaking} />
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                            <div className="hidden sm:flex bg-black/5 p-1 rounded-xl border border-black/5 gap-1">
+                                {voices.map(v => (
+                                    <button
+                                        key={v.id}
+                                        onClick={() => setSelectedVoiceId(v.id)}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-tighter transition-all ${selectedVoiceId === v.id ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                                        title={v.type}
+                                    >
+                                        {v.name}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="flex bg-black/5 p-1 rounded-xl border border-black/5">
+                                <button
+                                    onClick={() => { setInputMode('voice'); setInputText(''); }}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'voice' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    <Mic size={14} /> Voice
+                                </button>
+                                <button
+                                    onClick={() => { setInputMode('type'); setIsListening(false); if (recognitionRef.current) recognitionRef.current.stop(); }}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all ${inputMode === 'type' ? 'bg-white shadow-sm text-black' : 'text-gray-400 hover:text-gray-600'}`}
+                                >
+                                    <Keyboard size={14} /> Type
+                                </button>
+                            </div>
                         </div>
                     </div>
+
 
                     <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scroll-smooth z-0 bg-white/5">
                         <AnimatePresence mode="popLayout">
