@@ -13,7 +13,8 @@ if not api_key:
     print("ERROR: ELEVEN_LABS_API_KEY not found in .env")
     exit(1)
 
-print(f"Testing ElevenLabs API key (length: {len(api_key)})")
+masked_key = f"{api_key[:4]}...{api_key[-4:]}"
+print(f"Testing ElevenLabs API key: {masked_key} (length: {len(api_key)})")
 
 def test_voice(vid):
     url = f"https://api.elevenlabs.io/v1/voices/{vid}"

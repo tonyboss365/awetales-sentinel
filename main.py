@@ -34,6 +34,12 @@ if not groq_key:
 else:
     print(f"INFO: GROQ_API_KEY found (length: {len(groq_key)})")
 
+eleven_key = os.getenv("ELEVEN_LABS_API_KEY")
+if not eleven_key:
+    print("WARNING: ELEVEN_LABS_API_KEY not found in environment!")
+else:
+    print(f"INFO: ELEVEN_LABS_API_KEY found (length: {len(eleven_key)})")
+
 
 # --- DATABASE SETUP ---
 DB_FILE = "sentinel.db"

@@ -354,25 +354,44 @@ export default function AgentDashboard() {
                             handleAfterSpeech();
                         });
                     } else if ('speechSynthesis' in window) {
+                        console.log("ElevenLabs failed or key missing. Falling back to Browser SpeechSynthesis...");
                         isSpeakingRef.current = true;
                         setIsActuallySpeaking(true);
                         if (isListeningRef.current && recognitionRef.current) {
                             try { recognitionRef.current.stop(); } catch (e) { }
                         }
 
+                        // Clear any pending speech
+                        window.speechSynthesis.cancel();
+
                         const utterance = new SpeechSynthesisUtterance(speechText);
                         let voicesList = window.speechSynthesis.getVoices();
+                        console.log(`Found ${voicesList.length} browser voices.`);
+                        
                         let selectedVoice = voicesList.find(v => v.name.includes('Aria') || v.name.includes('Jenny')) 
                                          || voicesList.find(v => v.lang.startsWith('en-US'));
 
-                        if (selectedVoice) utterance.voice = selectedVoice;
+                        if (selectedVoice) {
+                            console.log("Selected browser voice:", selectedVoice.name);
+                            utterance.voice = selectedVoice;
+                        }
                         
                         let tInt = null;
-                        utterance.onstart = () => { tInt = startTyping(); };
+                        utterance.onstart = () => { 
+                            console.log("Browser SpeechSynthesis started.");
+                            tInt = startTyping(); 
+                        };
                         utterance.onend = () => {
+                            console.log("Browser SpeechSynthesis ended.");
                             setIsActuallySpeaking(false);
                             if (tInt) clearInterval(tInt);
                             setMessages(prev => prev.map(m => m.id === newMsgId ? { ...m, text: replyText } : m));
+                            handleAfterSpeech();
+                        };
+                        utterance.onerror = (e) => {
+                            console.error("Browser SpeechSynthesis error:", e);
+                            setIsActuallySpeaking(false);
+                            if (tInt) clearInterval(tInt);
                             handleAfterSpeech();
                         };
                         window.speechSynthesis.speak(utterance);
@@ -445,9 +464,15 @@ export default function AgentDashboard() {
                     <div className="flex bg-black/5 p-1 rounded-full border border-black/5">
                         <button 
                             onClick={() => {
+                                console.log("Manual Audio Test Triggered");
                                 if ('speechSynthesis' in window) {
+                                    window.speechSynthesis.cancel();
                                     const u = new SpeechSynthesisUtterance("Audio system test. If you hear this, sound is working.");
+                                    u.onstart = () => console.log("Test speech started");
+                                    u.onend = () => console.log("Test speech ended");
+                                    u.onerror = (e) => console.error("Test speech error:", e);
                                     window.speechSynthesis.speak(u);
+                                    alert("Check console (F12) for audio logs. Try speaking or clicking if you hear nothing.");
                                 } else {
                                     alert("Your browser does not support Speech Synthesis.");
                                 }
