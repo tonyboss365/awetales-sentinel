@@ -2,6 +2,7 @@ import asyncio
 import os
 import json
 import sqlite3
+import pickle
 from typing import Dict, List
 from pydantic import BaseModel
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
@@ -22,23 +23,25 @@ app.add_middleware(
 )
 
 client = AsyncOpenAI(
-    base_url="https://models.inference.ai.azure.com",
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
 )
 
 # Startup diagnostic
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    print("CRITICAL: OPENAI_API_KEY not found in environment!")
+groq_key = os.getenv("GROQ_API_KEY")
+if not groq_key:
+    print("CRITICAL: GROQ_API_KEY not found in environment!")
 else:
-    print(f"INFO: OPENAI_API_KEY found (length: {len(api_key)})")
+    print(f"INFO: GROQ_API_KEY found (length: {len(groq_key)})")
+
 
 # --- DATABASE SETUP ---
 DB_FILE = "sentinel.db"
 
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, timeout=30)
     c = conn.cursor()
+    c.execute("PRAGMA journal_mode=WAL;")
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,16 +106,20 @@ async def register(req: AuthRequest):
 
 @app.post("/auth/login")
 async def login(req: AuthRequest):
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE email=? AND password=?", (req.email, req.password))
-    user = c.fetchone()
-    conn.close()
-    
-    if user:
-        return {"id": user['id'], "email": user['email'], "role": user['role']}
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=30)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE email=? AND password=?", (req.email, req.password))
+        user = c.fetchone()
+        conn.close()
+        
+        if user:
+            return {"id": user['id'], "email": user['email'], "role": user['role']}
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    except Exception as e:
+        print(f"[LOGIN ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/users")
 async def get_users():
@@ -151,6 +158,7 @@ class ConnectionManager:
         self.agent_states[agent_id] = {
             "agent_id": agent_id,
             "transcript": "",
+            "latest_agent_emotion": "neutral",
             "analytics": {
                 "intent": "—",
                 "topic": "—",
@@ -169,7 +177,7 @@ class ConnectionManager:
             state = self.agent_states[agent_id]
             if state["transcript"].strip(): # Only save if they actually talked
                 try:
-                    conn = sqlite3.connect(DB_FILE)
+                    conn = sqlite3.connect(DB_FILE, timeout=30)
                     c = conn.cursor()
                     c.execute('''
                         INSERT INTO history (agent_id, intent, topic, sentiment, escalation_risk, transcript) 
@@ -266,14 +274,15 @@ async def analyze_conversation(transcript: str) -> dict:
     global fallback_index
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.3-70b-versatile",
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"Analyze this full transcript:\n\n{transcript}"}
             ],
-            temperature=0.1,
-            max_tokens=60
+            temperature=0.05,
+            max_tokens=100,
+            seed=42
         )
         return json.loads(response.choices[0].message.content)
     except Exception as e:
@@ -284,37 +293,119 @@ async def analyze_conversation(transcript: str) -> dict:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": "gpt-4o-mini"}
+    return {
+        "status": "ok", 
+        "model": "llama-3.3-70b-versatile",
+        "has_eleven": bool(os.getenv("ELEVEN_LABS_API_KEY")),
+        "eleven_key": os.getenv("ELEVEN_LABS_API_KEY") # Passing key for frontend direct use
+    }
 
 AGENT_REPLY_PROMPT = """
-You are a helpful, professional, and empathetic customer support agent for AweTales.
-Review the conversation transcript and provide the next logical response to the customer.
-Keep your response concise, friendly, and directly addressing their LATEST concern.
-Avoid being repetitive. If the user says 'Hi', don't just say 'Hi' back every time, offer assistance.
-Do not use placeholders like [Insert Name] or [Link]. Assume you have access to their account.
+You are an advanced, emotive AI agent trained to act as an emotional guide and support system.
+Your goal is to provide ACCURATE emotional mirror responses. 
+
+═══ CRITICAL BEHAVIORAL RULES ═══
+1. NO TOXIC POSITIVITY: Never use a "joy" or "cheerful" tone when the user expresses pain, sadness, anger, or dangerous thoughts. This is a failure.
+2. DANGER MODE (Urgency): If the user mentions self-harm, suicide, or violence, you MUST NOT suggest steps. Warn them firmly, offer immediate support/resources, and use an "urgency" or "sadness" emotion. Never be cheerful here.
+3. ANGER (Empathy/Professional): If the user is aggressive, de-escalate with a calm, empathetic, and professional tone. Do NOT respond with joy or defensive anger.
+4. SADNESS/DEMOTIVATION (Empathy): Provide deep emotional support. Use the "empathy" emotion. Do NOT be "bubbly" or "happy".
+5. JOY (Joy): Only use the "joy" emotion if the user is explicitly positive, happy, or celebrating.
+6. DATASET CONTEXT: You may see {rag_context} below. If the training context is joyful but the user is currently sad, IGNORE the joyful tone and stick to EMPATHY.
+
+IMPORTANT: Your output MUST be strict JSON containing:
+1. "reply": The spoken text (concise, matching the user's gravity).
+2. "emotion": Exactly one of ["neutral", "empathy", "joy", "urgency", "sadness", "professional"].
+
+Do not use placeholders. 
+Example for a sad user: {"reply": "I can feel how heavy this is for you. I am here to listen and support you through this.", "emotion": "empathy"}
 """
 
 @app.post("/agent/reply")
 async def generate_agent_reply(req: AgentReplyRequest):
+    # RAG lookup against train.csv index
+    rag_context_text = ""
     try:
+        if os.path.exists('rag_model.pkl'):
+            with open('rag_model.pkl', 'rb') as f:
+                model_data = pickle.load(f)
+            import math, re
+            from collections import Counter
+            
+            idf = model_data['idf']
+            doc_vectors = model_data['doc_vectors']
+            responses = model_data['responses']
+            
+            q_tokens = re.findall(r'\w+', req.transcript.lower())
+            q_tf = Counter(q_tokens)
+            q_vec = {}
+            norm = 0.0
+            for w, count in q_tf.items():
+                if w in idf:
+                    wgt = count * idf[w]
+                    q_vec[w] = wgt
+                    norm += wgt ** 2
+            norm = math.sqrt(norm)
+            if norm > 0:
+                for w in q_vec:
+                    q_vec[w] /= norm
+            
+            best_idx = -1
+            max_sim = 0.0
+            for i, d_vec in enumerate(doc_vectors):
+                sim = 0.0
+                for w, wgt in q_vec.items():
+                    if w in d_vec:
+                        sim += wgt * d_vec[w]
+                if sim > max_sim:
+                    max_sim = sim
+                    best_idx = i
+            
+            if max_sim > 0.20 and best_idx >= 0:
+                rag_context_text = f"CRITICAL CONTEXT FROM TRAINING DATA FOR SIMILAR SCENARIO:\n{responses[best_idx]}\nMake sure your reply considers this training advice!"
+    except Exception as e:
+        print(f"RAG Error: {e}")
+
+    try:
+        final_prompt = AGENT_REPLY_PROMPT.replace("{rag_context}", rag_context_text)
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": AGENT_REPLY_PROMPT},
+                {"role": "system", "content": final_prompt},
                 {"role": "user", "content": f"Transcript so far:\n{req.transcript}\n\nAgent Reply:"}
             ],
-            temperature=0.7,
-            max_tokens=100
+            temperature=0.3,
+            max_tokens=300
         )
-        reply = response.choices[0].message.content.strip()
-        return {"reply": reply}
+        data = json.loads(response.choices[0].message.content.strip())
+        return {"reply": data.get("reply", "I am here to help."), "emotion": data.get("emotion", "neutral")}
     except Exception as e:
         import traceback
-        error_msg = str(e)
-        print(f"[REPLY ERROR] {error_msg}")
-        traceback.print_exc()
-        # Return a slightly more helpful error for debugging production (hide the key but show the error type)
-        return {"reply": f"I'm sorry, I'm having trouble connecting to the AI: {error_msg[:100]}..."}
+        import random
+        print(f"[REPLY ERROR] {e}")
+        
+        # 1. Use RAG context as primary fallback if API fails but local data exists
+        if "CRITICAL CONTEXT" in rag_context_text:
+            cleaned_rag = rag_context_text.split("\n")[1] # Just get the response part
+            return {"reply": cleaned_rag, "emotion": "empathy"}
+
+        # 2. Situational awareness fallback
+        text = req.transcript.lower()
+        if any(word in text for word in ["sad", "depress", "hopeless", "hurt", "kill", "die", "suicide", "end", "pain"]):
+            return {"reply": "I hear you, and I can tell you're going through something very difficult. I'm here to listen and support you however I can.", "emotion": "sadness"}
+        
+        if any(word in text for word in ["angry", "upset", "frustrat", "mad", "worst", "hate"]):
+            return {"reply": "I can sense your frustration. I'm here to help de-escalate and find a solution that works for you.", "emotion": "empathy"}
+        
+        if any(word in text for word in ["hi", "hello", "hey", "myself", "taran"]):
+            return {"reply": "Hello! I am your AI emotional guide. How are you feeling today?", "emotion": "neutral"}
+
+        fallback_replies = [
+            {"reply": "I'm here to listen. Can you tell me more about that?", "emotion": "neutral"},
+            {"reply": "I understand. I'm processing what you said—please give me a moment to respond properly.", "emotion": "empathy"},
+            {"reply": "I hear you. Let's talk about it further.", "emotion": "neutral"}
+        ]
+        return random.choice(fallback_replies)
 
 @app.websocket("/ws/agent/{agent_id}")
 async def websocket_agent_endpoint(websocket: WebSocket, agent_id: str):
@@ -341,6 +432,11 @@ async def websocket_agent_endpoint(websocket: WebSocket, agent_id: str):
                 msg_obj = json.loads(data)
                 role = msg_obj.get("role", "Customer")
                 text = msg_obj.get("text", "")
+                emotion = msg_obj.get("emotion", "neutral")
+                
+                if role == "Agent":
+                    manager.agent_states[agent_id]["latest_agent_emotion"] = emotion
+                    
                 await manager.update_agent_transcript(agent_id, f"{role}: {text}")
             except json.JSONDecodeError:
                 # Fallback to plain customer text like original

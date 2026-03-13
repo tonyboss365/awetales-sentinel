@@ -15,9 +15,11 @@ The following diagram illustrates the real-time data flow between the Agent, Bac
 sequenceDiagram
     participant A as Agent Dashboard (React)
     participant B as FastAPI Backend (WebSocket)
-    participant AI as AI Engine (gpt-4o-mini)
+    participant AI as AI Engine (Groq Llama-3.3)
+    participant TTS as ElevenLabs Neural Voice
     participant S as Supervisor Dashboard (React)
     participant DB as SQLite Database
+
 
     Note over A,B: User starts session
     A->>B: WebSocket Connect (/ws/agent/{id})
@@ -28,8 +30,12 @@ sequenceDiagram
         Note right of B: 0.2s Debounce Buffer
         B->>AI: Analyze Conversation (Intent, Sentiment, Risk)
         AI-->>B: JSON Analytics Payload
+        B->>A: Generate Emotive Reply (Sentient Brain)
+        A->>TTS: Neural Voice Synthesis (ElevenLabs)
+        TTS-->>A: Humanoid Audio Stream
         B->>S: Broadcast: Live Analytics Update
         S->>S: Render Sentiment & Risk Alerts
+
     end
 
     Note over A,B: Session Disconnect
@@ -67,12 +73,15 @@ We don't wait for "submit" buttons. As the Agent types (simulating ASR text bloc
 2. **Lightning LLM Inference (0.2s Latency Buffers)**:
 Language models are slow; streaming real-time analytics requires extreme speed. We implemented a 0.2s debounce buffer on the backend. This aggregates micro-text inputs before hitting our inference layer, drastically reducing API spam while maintaining sub-second updates on the Supervisor Dashboard. We also constrained our `gpt-4o-mini` max_tokens to 60 for near-instant inference.
 
-3. **Complete "Enterprise" Multi-Role Polish**:
-We built a dual-sided Multi-Role architecture. 
-- The `Agent Dashboard` acts purely as the customer-service agent, feeding the ASR stream. 
-- Handled via pure WebSocket Pub/Sub structure, **entirely separate** `Supervisor Dashboards` receive live payload changes from active agents on the floor, perfectly mimicking reality.
-- We even included an **AI Auto-Responder** that simulates the dynamic, unpredictable replies of a customer instead of relying on a hard-coded text script.
-- All sessions are persistently archived to an SQLite **history** database when the WebSocket safely closes.
+3. **Hyper-Realistic Neural Voice (ElevenLabs)**:
+We integrated the world's most advanced TTS engine. The bot doesn't just speak; it has **Emotive Cadence**. 
+- **Voice Cloning**: Pre-configured with a personal cloned voice for authentic interaction.
+- **Dynamic Prosody**: The AI shifts its warmth, stability, and style based on the real-time sentiment analysis, allowing it to whisper, act joyful, or sound professional.
+- **Voice Switcher**: Users can hot-swap between multiple neural personas (Aria, Chris, Sarah, Custom).
+
+4. **Lightning Inference (Groq LPU)**:
+To eliminate the "robotic delay," we migrated the brain to **Groq**. This allows for sub-500ms token generation, making the voice conversation feel truly human and fluid.
+
 
 ---
 
@@ -93,10 +102,11 @@ We built a dual-sided Multi-Role architecture.
     - Supervisor: `supervisor@awetales.com` / `super123`
 - **Responsibilities**: Manages the `ConnectionManager` routing standard WebSocket connections alongside broadcasting data to pure listener clients (Supervisors). Exposes standard REST points for Auth and AI Reply generation.
 
-### AI ENGINE
-- **Model**: `gpt-4o-mini`
-- **Provider**: Azure AI Inference API (GitHub Models Infrastructure)
-- **Responsibilities**: Performs rapid classification based on a strict structural system prompt heavily biased toward returning highly structured JSON data strings.
+### AI ENGINE & VOICE
+- **Logic Model**: `llama-3.3-70b-versatile` (via Groq)
+- **Voice Engine**: `ElevenLabs Neural TTS`
+- **Responsibilities**: Performs ultra-low latency classification and generates human-like emotive speech with personalized voice clones.
+
 
 ---
 
@@ -112,9 +122,12 @@ To run this project locally on your machine:
 ```bash
 cd awetales-sentinel
 pip install -r requirements.txt
-# Ensure an environment variable OPENAI_API_KEY is set to your GitHub PAT.
+# Create a .env file with:
+# GROQ_API_KEY=your_key
+# ELEVEN_LABS_API_KEY=your_key
 uvicorn main:app --reload
 ```
+
 
 ### 3. Frontend Setup:
 ```bash
